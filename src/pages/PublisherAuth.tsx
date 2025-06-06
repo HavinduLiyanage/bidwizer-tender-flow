@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Upload, Users, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,6 +20,7 @@ const PublisherAuth = () => {
     organizationType: "",
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +29,7 @@ const PublisherAuth = () => {
       description: "Welcome to your publisher dashboard!",
     });
     console.log("Publisher login:", loginData);
+    navigate("/publisher-dashboard");
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -44,9 +46,10 @@ const PublisherAuth = () => {
 
     toast({
       title: "Registration Successful",
-      description: "Please check your email to verify your account.",
+      description: "Account created! Redirecting to your dashboard.",
     });
     console.log("Publisher registration:", registerData);
+    navigate("/publisher-dashboard");
   };
 
   return (
