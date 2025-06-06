@@ -9,6 +9,9 @@ import Plans from "./pages/Plans";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PublisherAuth from "./pages/PublisherAuth";
+import Dashboard from "./pages/Dashboard";
+import TenderDetail from "./pages/TenderDetail";
+import AITools from "./pages/AITools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/publisher-auth" element={<PublisherAuth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tender/:id" element={<TenderDetail />} />
+          <Route path="/ai-tools/:tenderId" element={<AITools />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
