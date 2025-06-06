@@ -1,11 +1,11 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot } from "lucide-react";
+import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AIChat from "@/components/AIChat";
 
 const AITools = () => {
   const { tenderId } = useParams();
@@ -251,10 +251,11 @@ ${companyData.phone} | ${companyData.email}`,
 
           <div className="lg:col-span-3">
             <Tabs defaultValue="analysis" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="analysis">Requirements Analysis</TabsTrigger>
                 <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
                 <TabsTrigger value="proposal">Proposal Structure</TabsTrigger>
+                <TabsTrigger value="chat">Chat with AI</TabsTrigger>
               </TabsList>
               
               <TabsContent value="analysis" className="space-y-4">
@@ -388,6 +389,26 @@ ${companyData.phone} | ${companyData.email}`,
                         </pre>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="chat" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <MessageSquare className="w-5 h-5 mr-2" />
+                      Chat with AI Assistant
+                    </CardTitle>
+                    <CardDescription>
+                      Ask questions about the tender requirements, strategy, or get personalized advice
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AIChat 
+                      tenderTitle="Construction of Solar Power Facility"
+                      isAnalysisComplete={analysisComplete}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
