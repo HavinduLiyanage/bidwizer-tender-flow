@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,11 @@ const PublisherDashboard = () => {
     requirements: [""],
     documents: [] as File[]
   });
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Get publisher info from localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const handleInputChange = (field: string, value: string) => {
     setTenderData(prev => ({ ...prev, [field]: value }));
@@ -57,26 +60,72 @@ const PublisherDashboard = () => {
     setTenderData(prev => ({ ...prev, documents: newDocuments }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Tender data:", tenderData);
-    toast({
-      title: "Tender Published Successfully",
-      description: "Your tender has been published and is now available to bidders.",
-    });
-    
-    // Reset form
-    setTenderData({
-      title: "",
-      summary: "",
-      fullDescription: "",
-      deadline: "",
-      region: "",
-      value: "",
-      category: "",
-      requirements: [""],
-      documents: []
-    });
+    setLoading(true);
+
+    try {
+      if (!user.id) {
+        toast({
+          title: "Not logged in",
+          description: "Please log in as a publisher.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      if (tenderData.documents.length === 0) {
+        toast({
+          title: "No document uploaded",
+          description: "Please upload at least one document.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("publisherId", user.id);
+      formData.append("title", tenderData.title);
+      formData.append("description", tenderData.summary + "\n\n" + tenderData.fullDescription);
+      formData.append("deadline", tenderData.deadline);
+      // Only send the first document for now (backend expects a single file)
+      formData.append("file", tenderData.documents[0]);
+
+      // Optionally, you can send more fields if your backend supports them
+
+      const response = await fetch("http://localhost:4000/api/tenders", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+      toast({
+        title: "Tender Published Successfully",
+        description: "Your tender has been published and is now available to bidders.",
+      });
+
+      // Reset form
+      setTenderData({
+        title: "",
+        summary: "",
+        fullDescription: "",
+        deadline: "",
+        region: "",
+        value: "",
+        category: "",
+        requirements: [""],
+        documents: []
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error uploading tender",
+        description: err.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -119,7 +168,7 @@ const PublisherDashboard = () => {
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Tender Title *</Label>
@@ -304,8 +353,9 @@ const PublisherDashboard = () => {
                 <Button
                   type="submit"
                   className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  disabled={loading}
                 >
-                  Publish Tender
+                  {loading ? "Publishing..." : "Publish Tender"}
                 </Button>
                 <Button type="button" variant="outline">
                   Save as Draft

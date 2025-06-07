@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     String // "publisher" or "bidder"
+  status   String // "active" or "pending"
+  tenders  Tender[]
+}
+
+model Tender {
+  id          Int      @id @default(autoincrement())
+  publisher   User     @relation(fields: [publisherId], references: [id])
+  publisherId Int
+  title       String
+  description String
+  deadline    DateTime
+  filePath    String
+  status      String   // "active", "closed", etc.
+  createdAt   DateTime @default(now())
+}

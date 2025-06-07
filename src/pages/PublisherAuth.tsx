@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,15 +20,39 @@ const PublisherAuth = () => {
   });
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Login Successful",
-      description: "Welcome to your publisher dashboard!",
-    });
-    console.log("Publisher login:", loginData);
-    navigate("/publisher-dashboard");
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:4000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Invalid credentials");
+      }
+      const user = await response.json();
+      localStorage.setItem("user", JSON.stringify(user));
+      toast({
+        title: "Login Successful",
+        description: "Welcome to your publisher dashboard!",
+      });
+      navigate("/publisher-dashboard");
+    } catch (err) {
+      toast({
+        title: "Login Failed",
+        description: "Invalid email or password.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = (e: React.FormEvent) => {
