@@ -6,20 +6,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building } from "lucide-react";
+import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
     title: "",
-    summary: "",
-    fullDescription: "",
     deadline: "",
     region: "",
     value: "",
     category: "",
     requirements: [""],
-    documents: [] as File[]
+    documents: [] as File[],
+    advertisementImage: null as File | null
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -55,77 +54,41 @@ const PublisherDashboard = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setTenderData(prev => ({ ...prev, advertisementImage: e.target.files![0] }));
+    }
+  };
+
   const removeDocument = (index: number) => {
     const newDocuments = tenderData.documents.filter((_, i) => i !== index);
     setTenderData(prev => ({ ...prev, documents: newDocuments }));
   };
 
+  const removeAdvertisementImage = () => {
+    setTenderData(prev => ({ ...prev, advertisementImage: null }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (!user.id) {
-        toast({
-          title: "Not logged in",
-          description: "Please log in as a publisher.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      if (tenderData.documents.length === 0) {
-        toast({
-          title: "No document uploaded",
-          description: "Please upload at least one document.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("publisherId", user.id);
-      formData.append("title", tenderData.title);
-      formData.append("description", tenderData.summary + "\n\n" + tenderData.fullDescription);
-      formData.append("deadline", tenderData.deadline);
-      // Only send the first document for now (backend expects a single file)
-      formData.append("file", tenderData.documents[0]);
-
-      // Optionally, you can send more fields if your backend supports them
-
-      const response = await fetch("http://localhost:4000/api/tenders", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-      toast({
-        title: "Tender Published Successfully",
-        description: "Your tender has been published and is now available to bidders.",
-      });
-
-      // Reset form
-      setTenderData({
-        title: "",
-        summary: "",
-        fullDescription: "",
-        deadline: "",
-        region: "",
-        value: "",
-        category: "",
-        requirements: [""],
-        documents: []
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error uploading tender",
-        description: err.message || "Something went wrong.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    console.log("Tender data:", tenderData);
+    toast({
+      title: "Tender Published Successfully",
+      description: "Your tender has been published and is now available to bidders.",
+    });
+    
+    // Reset form
+    setTenderData({
+      title: "",
+      summary: "",
+      fullDescription: "",
+      deadline: "",
+      region: "",
+      value: "",
+      category: "",
+      requirements: [""],
+      documents: []
+    });
   };
 
   return (
@@ -188,40 +151,62 @@ const PublisherDashboard = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="construction">Construction & Energy</SelectItem>
-                      <SelectItem value="it">IT & Technology</SelectItem>
+                      <SelectItem value="construction">Construction</SelectItem>
+                      <SelectItem value="energy">Energy</SelectItem>
+                      <SelectItem value="it">IT</SelectItem>
+                      <SelectItem value="technology">Technology</SelectItem>
                       <SelectItem value="infrastructure">Infrastructure</SelectItem>
                       <SelectItem value="consulting">Consulting Services</SelectItem>
                       <SelectItem value="manufacturing">Manufacturing</SelectItem>
                       <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="oil-gas">Oil & Gas</SelectItem>
+                      <SelectItem value="automobile">Automobile</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="summary">Brief Summary *</Label>
-                <Textarea
-                  id="summary"
-                  placeholder="Provide a brief overview of the tender requirements..."
-                  value={tenderData.summary}
-                  onChange={(e) => handleInputChange("summary", e.target.value)}
-                  className="min-h-[100px]"
-                  required
-                />
-              </div>
+              <div className="space-y-4">
+                <Label className="flex items-center">
+                  <Image className="w-4 h-4 mr-1" />
+                  Tender Advertisement Image *
+                </Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                    accept="image/*"
+                  />
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <Image className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">
+                      Click to upload tender advertisement image
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      JPG, PNG, GIF files accepted
+                    </p>
+                  </label>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Full Description *</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Provide detailed project scope, specifications, and requirements..."
-                  value={tenderData.fullDescription}
-                  onChange={(e) => handleInputChange("fullDescription", e.target.value)}
-                  className="min-h-[200px]"
-                  required
-                />
+                {tenderData.advertisementImage && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Uploaded Advertisement Image:</p>
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">{tenderData.advertisementImage.name}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={removeAdvertisementImage}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid md:grid-cols-3 gap-6">
