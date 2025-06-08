@@ -6,16 +6,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image } from "lucide-react";
+import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, User, Phone, Mail, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
     title: "",
     deadline: "",
+    preBidMeetingDate: "",
+    preBidMeetingTime: "",
     region: "",
     value: "",
     category: "",
+    contactPersonName: "",
+    contactNumber: "",
+    contactEmail: "",
+    companyWebsite: "",
     requirements: [""],
     documents: [] as File[],
     advertisementImage: null as File | null
@@ -80,14 +86,19 @@ const PublisherDashboard = () => {
     // Reset form
     setTenderData({
       title: "",
-      summary: "",
-      fullDescription: "",
       deadline: "",
+      preBidMeetingDate: "",
+      preBidMeetingTime: "",
       region: "",
       value: "",
       category: "",
+      contactPersonName: "",
+      contactNumber: "",
+      contactEmail: "",
+      companyWebsite: "",
       requirements: [""],
-      documents: []
+      documents: [],
+      advertisementImage: null
     });
   };
 
@@ -209,7 +220,7 @@ const PublisherDashboard = () => {
                 )}
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="deadline" className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
@@ -236,19 +247,114 @@ const PublisherDashboard = () => {
                     onChange={(e) => handleInputChange("value", e.target.value)}
                   />
                 </div>
+              </div>
 
+              <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="region" className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    Region/Location *
+                  <Label htmlFor="preBidMeetingDate" className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    Pre-Bid Meeting Date
                   </Label>
                   <Input
-                    id="region"
-                    placeholder="e.g., California, USA"
-                    value={tenderData.region}
-                    onChange={(e) => handleInputChange("region", e.target.value)}
-                    required
+                    id="preBidMeetingDate"
+                    type="date"
+                    value={tenderData.preBidMeetingDate}
+                    onChange={(e) => handleInputChange("preBidMeetingDate", e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="preBidMeetingTime" className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    Pre-Bid Meeting Time
+                  </Label>
+                  <Input
+                    id="preBidMeetingTime"
+                    type="time"
+                    value={tenderData.preBidMeetingTime}
+                    onChange={(e) => handleInputChange("preBidMeetingTime", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="region" className="flex items-center">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  Region/Location *
+                </Label>
+                <Input
+                  id="region"
+                  placeholder="e.g., California, USA"
+                  value={tenderData.region}
+                  onChange={(e) => handleInputChange("region", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <User className="w-5 h-5 mr-2" />
+                  Contact Person Details
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPersonName" className="flex items-center">
+                      <User className="w-4 h-4 mr-1" />
+                      Contact Person Name *
+                    </Label>
+                    <Input
+                      id="contactPersonName"
+                      placeholder="e.g., John Smith"
+                      value={tenderData.contactPersonName}
+                      onChange={(e) => handleInputChange("contactPersonName", e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactNumber" className="flex items-center">
+                      <Phone className="w-4 h-4 mr-1" />
+                      Contact Number *
+                    </Label>
+                    <Input
+                      id="contactNumber"
+                      placeholder="e.g., +1 (555) 123-4567"
+                      value={tenderData.contactNumber}
+                      onChange={(e) => handleInputChange("contactNumber", e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="contactEmail" className="flex items-center">
+                      <Mail className="w-4 h-4 mr-1" />
+                      Contact Email *
+                    </Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      placeholder="e.g., john@company.com"
+                      value={tenderData.contactEmail}
+                      onChange={(e) => handleInputChange("contactEmail", e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="companyWebsite" className="flex items-center">
+                      <Globe className="w-4 h-4 mr-1" />
+                      Company Website
+                    </Label>
+                    <Input
+                      id="companyWebsite"
+                      placeholder="e.g., https://company.com"
+                      value={tenderData.companyWebsite}
+                      onChange={(e) => handleInputChange("companyWebsite", e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
