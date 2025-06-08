@@ -14,12 +14,10 @@ import {
   Building, 
   DollarSign, 
   FileText, 
-  Download, 
+  Eye, 
   Clock, 
   Users, 
-  Zap,
-  Eye,
-  MessageSquare
+  Zap
 } from "lucide-react";
 
 const TenderDetail = () => {
@@ -27,11 +25,6 @@ const TenderDetail = () => {
   const navigate = useNavigate();
   const [tender, setTender] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState("");
-  const [loadingSummary, setLoadingSummary] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [loadingAnswer, setLoadingAnswer] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,33 +41,6 @@ const TenderDetail = () => {
     };
     fetchTender();
   }, [id, toast]);
-
-  const handleSummarize = async () => {
-    setLoadingSummary(true);
-    setSummary("");
-    const res = await fetch("http://localhost:4000/api/ai/summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenderText: tender.fullDescription }),
-    });
-    const data = await res.json();
-    setSummary(data.summary);
-    setLoadingSummary(false);
-  };
-
-  const handleAsk = async () => {
-    if (!question) return;
-    setLoadingAnswer(true);
-    setAnswer("");
-    const res = await fetch("http://localhost:4000/api/ai/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenderText: tender.fullDescription, question }),
-    });
-    const data = await res.json();
-    setAnswer(data.answer);
-    setLoadingAnswer(false);
-  };
 
   const getStatusColor = (deadline: string) => {
     const daysLeft = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -215,11 +181,32 @@ const TenderDetail = () => {
               </CardContent>
             </Card>
 
+            {/* Advertisement Image */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Eye className="w-5 h-5 mr-2" />
+                  Project Advertisement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100 rounded-lg p-8 text-center">
+                  <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Eye className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                      <p className="text-gray-600">Advertisement Image</p>
+                      <p className="text-sm text-gray-500 mt-2">Project promotional content from publisher</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Documents */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Download className="w-5 h-5 mr-2" />
+                  <FileText className="w-5 h-5 mr-2" />
                   Tender Documents
                 </CardTitle>
               </CardHeader>
@@ -239,8 +226,8 @@ const TenderDetail = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
                       </a>
                     </Button>
                   </div>
@@ -292,7 +279,7 @@ const TenderDetail = () => {
                   Analyze this tender with AI assistance
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <Button
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   onClick={() => navigate(`/ai-tools/${tender.id}`)}
@@ -300,53 +287,6 @@ const TenderDetail = () => {
                   <Zap className="w-4 h-4 mr-2" />
                   Launch AI Analysis
                 </Button>
-                
-                <Separator />
-                
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleSummarize}
-                    disabled={loadingSummary}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    {loadingSummary ? "Summarizing..." : "Quick Summary"}
-                  </Button>
-                  
-                  {summary && (
-                    <div className="bg-white rounded-lg p-3 text-sm text-gray-800 border">
-                      <strong className="text-blue-900">Summary:</strong> {summary}
-                    </div>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={question}
-                    onChange={e => setQuestion(e.target.value)}
-                    placeholder="Ask about this tender..."
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleAsk}
-                    disabled={loadingAnswer || !question}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    {loadingAnswer ? "Asking..." : "Ask AI"}
-                  </Button>
-                  
-                  {answer && (
-                    <div className="bg-white rounded-lg p-3 text-sm text-gray-800 border">
-                      <strong className="text-blue-900">AI Answer:</strong> {answer}
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           </div>
