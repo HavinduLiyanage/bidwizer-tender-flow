@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, User, Phone, Mail, Globe } from "lucide-react";
+import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const PublisherDashboard = () => {
@@ -104,6 +105,7 @@ const PublisherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
+      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -115,6 +117,12 @@ const PublisherDashboard = () => {
             </Link>
             
             <div className="flex items-center space-x-4">
+              <Link to="/tender-stats">
+                <Button variant="outline" size="sm">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  View Stats
+                </Button>
+              </Link>
               <span className="text-sm text-gray-600">Publisher Portal</span>
               <Button variant="outline" size="sm">
                 Logout

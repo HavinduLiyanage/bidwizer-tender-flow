@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import TenderDetail from "./pages/TenderDetail";
 import AITools from "./pages/AITools";
 import NotFound from "./pages/NotFound";
 import BidderDashboard from "./pages/Dashboard";
+import TenderStats from "./pages/TenderStats";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,7 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/publisher-auth" element={<PublisherAuth />} />
           <Route path="/publisher-dashboard" element={<PublisherDashboard />} />
+          <Route path="/tender-stats" element={<TenderStats />} />
           <Route path="/dashboard" element={<BidderDashboard />} />
           <Route path="/tender/:id" element={<TenderDetail />} />
           <Route path="/ai-tools/:tenderId" element={<AITools />} />
