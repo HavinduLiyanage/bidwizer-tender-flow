@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare } from "lucide-react";
+import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AIChat from "@/components/AIChat";
 
@@ -23,33 +24,40 @@ const AITools = () => {
     license: "CA-ELE-2023-8901"
   };
 
-  // Dummy AI analysis results
+  // Updated AI analysis results with new content
   const analysisResults = {
-    requirements: `Based on the tender analysis, here are the key requirements:
+    tenderBrief: `TENDER BRIEF SUMMARY
 
-• Technical Requirements:
-  - 10MW solar photovoltaic installation
-  - Grid-tied system with utility interconnection
-  - Inverter efficiency minimum 98%
-  - 25-year performance warranty required
+Project: Construction of 10MW Solar Power Facility
+Publisher: California Department of Energy
+Location: Riverside County, California
+Contract Type: Design-Build-Operate
 
-• Compliance Requirements:
-  - Licensed electrical contractor (✓ You qualify)
-  - Environmental impact assessment compliance
-  - Local building codes and electrical standards
-  - OSHA safety regulations compliance
+Key Project Details:
+• Solar photovoltaic installation capacity: 10MW
+• Grid interconnection required with Southern California Edison
+• 25-year operational period with performance guarantees
+• Environmental compliance and permitting included
+• Local workforce preference (10% scoring weight)
 
-• Experience Requirements:
-  - Minimum 5 years utility-scale solar experience
-  - Portfolio of projects >5MW required
-  - Financial capacity $1M+ working capital
-  - References from government contracts
+Technical Specifications:
+• Minimum 98% inverter efficiency requirement
+• Tier 1 solar panels with 25-year warranty
+• Smart monitoring and control systems
+• Grid-tied configuration with revenue metering
 
-• Scoring Criteria:
-  - Technical approach (40%)
-  - Experience and qualifications (30%)
-  - Price competitiveness (20%)
-  - Local workforce hiring (10%)`,
+Submission Requirements:
+• Technical proposal with detailed design
+• Financial proposal with lifecycle costs
+• Company qualifications and experience portfolio
+• Project timeline and resource allocation plan
+• Safety and quality management procedures
+
+Evaluation Criteria:
+• Technical approach and innovation (40%)
+• Experience and qualifications (30%)
+• Price competitiveness (20%)
+• Local economic impact (10%)`,
 
     coverLetter: `Dear Procurement Officer,
 
@@ -76,55 +84,53 @@ Chief Executive Officer
 ${companyData.name}
 ${companyData.phone} | ${companyData.email}`,
 
-    proposalStructure: `PROPOSAL STRUCTURE - Solar Power Facility Construction
+    supplementaryDocuments: `SUPPLEMENTARY DOCUMENTS CHECKLIST
 
-1. EXECUTIVE SUMMARY
-   - Project understanding and approach
-   - Key value propositions
-   - Total project cost summary
+Required Documentation Package:
 
-2. COMPANY QUALIFICATIONS
-   - Company overview and history
-   - Relevant project portfolio (focus on 5MW+ projects)
-   - Team qualifications and certifications
-   - Financial capacity documentation
+1. CORPORATE DOCUMENTS
+   ✓ Certificate of Incorporation
+   ✓ Business License and Permits
+   ✓ Professional Liability Insurance ($2M minimum)
+   ✓ Workers' Compensation Insurance
+   ✓ Bonding Capacity Documentation
 
-3. TECHNICAL APPROACH
-   - Site assessment and design methodology
-   - Solar panel and equipment specifications
-   - Electrical infrastructure design
-   - Grid interconnection strategy
-   - Quality assurance procedures
+2. TECHNICAL CERTIFICATIONS
+   ✓ Electrical Contractor License (CA-ELE-2023-8901)
+   ✓ NABCEP Solar Installation Certifications
+   ✓ OSHA 30-Hour Safety Training Certificates
+   ✓ Equipment Manufacturer Authorizations
+   ✓ Grid Interconnection Experience Letters
 
-4. PROJECT MANAGEMENT
-   - Project timeline and milestones
-   - Resource allocation plan
-   - Risk management strategy
-   - Safety protocols and OSHA compliance
+3. FINANCIAL DOCUMENTATION
+   ✓ Audited Financial Statements (Last 3 years)
+   ✓ Bank References and Credit Rating
+   ✓ Working Capital Verification ($1M+ required)
+   ✓ Performance Bond Capacity Confirmation
+   ✓ Project-Specific Financial Guarantees
 
-5. COMPLIANCE & CERTIFICATIONS
-   - Licensing and regulatory compliance
-   - Environmental compliance plan
-   - Local building code adherence
-   - Warranty and performance guarantees
+4. PROJECT PORTFOLIO
+   ✓ Similar Solar Project Case Studies (>5MW)
+   ✓ Government Contract References
+   ✓ Client Testimonials and Recommendations
+   ✓ Project Photos and Performance Data
+   ✓ Warranty and Maintenance Records
 
-6. PRICING & VALUE
-   - Detailed cost breakdown
-   - Payment schedule
-   - Value-added services
-   - Long-term maintenance options
+5. COMPLIANCE DOCUMENTATION
+   ✓ Environmental Management Plan
+   ✓ Safety Management System Documentation
+   ✓ Quality Assurance Procedures
+   ✓ Local Workforce Development Plan
+   ✓ Minority Business Enterprise Certifications
 
-7. LOCAL IMPACT
-   - Local workforce hiring plan
-   - Community engagement strategy
-   - Economic impact projections
-   - Sustainability commitments
+6. TECHNICAL SUBMITTALS
+   ✓ Preliminary Design Drawings
+   ✓ Equipment Specifications and Data Sheets
+   ✓ System Performance Calculations
+   ✓ Interconnection Study Results
+   ✓ Environmental Impact Assessment
 
-8. APPENDICES
-   - Licenses and certifications
-   - Reference project case studies
-   - Technical specifications
-   - Financial statements`
+Note: All documents must be current, notarized where required, and submitted in both digital and hard copy formats as specified in the tender requirements.`
   };
 
   const handleRunAnalysis = () => {
@@ -145,6 +151,13 @@ ${companyData.phone} | ${companyData.email}`,
     toast({
       title: "Copied to Clipboard",
       description: `${type} has been copied to your clipboard.`,
+    });
+  };
+
+  const handleReleaseDocument = () => {
+    toast({
+      title: "Document Released",
+      description: "Tender document has been released to relevant office personnel.",
     });
   };
 
@@ -215,6 +228,17 @@ ${companyData.phone} | ${companyData.email}`,
                   </div>
                 )}
 
+                {analysisComplete && (
+                  <Button 
+                    onClick={handleReleaseDocument}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Release to Office
+                  </Button>
+                )}
+
                 <div className="space-y-2 text-xs text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Clock className="w-3 h-3" />
@@ -250,25 +274,25 @@ ${companyData.phone} | ${companyData.email}`,
           </div>
 
           <div className="lg:col-span-3">
-            <Tabs defaultValue="analysis" className="w-full">
+            <Tabs defaultValue="tender-brief" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="analysis">Requirements Analysis</TabsTrigger>
+                <TabsTrigger value="tender-brief">Tender Brief</TabsTrigger>
                 <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
-                <TabsTrigger value="proposal">Proposal Structure</TabsTrigger>
-                <TabsTrigger value="chat">Chat with AI</TabsTrigger>
+                <TabsTrigger value="supplementary">Supplementary Documents</TabsTrigger>
+                <TabsTrigger value="chat">Chat with Bid Document</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="analysis" className="space-y-4">
+              <TabsContent value="tender-brief" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      AI Requirements Analysis
+                      Tender Brief Summary
                       {analysisComplete && (
                         <div className="flex space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleCopy(analysisResults.requirements, "Requirements analysis")}
+                            onClick={() => handleCopy(analysisResults.tenderBrief, "Tender brief")}
                           >
                             <Copy className="w-4 h-4 mr-2" />
                             Copy
@@ -281,19 +305,19 @@ ${companyData.phone} | ${companyData.email}`,
                       )}
                     </CardTitle>
                     <CardDescription>
-                      AI-extracted key requirements and compliance criteria
+                      AI-generated summary of key tender information and requirements
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!analysisComplete ? (
                       <div className="text-center py-12 text-gray-500">
                         <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Run AI analysis to see requirements breakdown</p>
+                        <p>Run AI analysis to see tender brief</p>
                       </div>
                     ) : (
                       <div className="prose prose-sm max-w-none">
                         <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-                          {analysisResults.requirements}
+                          {analysisResults.tenderBrief}
                         </pre>
                       </div>
                     )}
@@ -350,17 +374,17 @@ ${companyData.phone} | ${companyData.email}`,
                 </Card>
               </TabsContent>
               
-              <TabsContent value="proposal" className="space-y-4">
+              <TabsContent value="supplementary" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      AI Proposal Structure
+                      Supplementary Documents Checklist
                       {analysisComplete && (
                         <div className="flex space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleCopy(analysisResults.proposalStructure, "Proposal structure")}
+                            onClick={() => handleCopy(analysisResults.supplementaryDocuments, "Supplementary documents")}
                           >
                             <Copy className="w-4 h-4 mr-2" />
                             Copy
@@ -373,19 +397,19 @@ ${companyData.phone} | ${companyData.email}`,
                       )}
                     </CardTitle>
                     <CardDescription>
-                      Suggested proposal outline optimized for this tender
+                      Required documents and certifications for tender submission
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!analysisComplete ? (
                       <div className="text-center py-12 text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Run AI analysis to generate proposal structure</p>
+                        <p>Run AI analysis to generate document checklist</p>
                       </div>
                     ) : (
                       <div className="prose prose-sm max-w-none">
                         <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-                          {analysisResults.proposalStructure}
+                          {analysisResults.supplementaryDocuments}
                         </pre>
                       </div>
                     )}
@@ -398,10 +422,10 @@ ${companyData.phone} | ${companyData.email}`,
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <MessageSquare className="w-5 h-5 mr-2" />
-                      Chat with AI Assistant
+                      Chat with Bid Document
                     </CardTitle>
                     <CardDescription>
-                      Ask questions about the tender requirements, strategy, or get personalized advice
+                      Ask questions about the tender requirements, documents, or get personalized advice
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

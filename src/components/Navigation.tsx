@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Zap } from "lucide-react";
+import { Zap, BookOpen } from "lucide-react";
 
 const Navigation = () => {
   return (
@@ -18,6 +18,10 @@ const Navigation = () => {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
+            <Link to="/library" className="flex items-center text-gray-700 hover:text-blue-600 font-medium transition-colors">
+              <BookOpen className="w-4 h-4 mr-1" />
+              Library
+            </Link>
             <Link to="/plans" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
               Plans
             </Link>

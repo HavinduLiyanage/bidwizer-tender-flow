@@ -13,6 +13,7 @@ import PublisherDashboard from "./pages/PublisherDashboard";
 import Dashboard from "./pages/Dashboard";  
 import TenderDetail from "./pages/TenderDetail";
 import AITools from "./pages/AITools";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 import BidderDashboard from "./pages/Dashboard";
 import TenderStats from "./pages/TenderStats";
@@ -27,6 +28,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/library" element={<Library />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
