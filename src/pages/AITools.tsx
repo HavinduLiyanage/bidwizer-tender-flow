@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,6 @@ const AITools = () => {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [teamMessage, setTeamMessage] = useState("");
 
   // Dummy company data
   const companyData = {
@@ -185,29 +183,6 @@ Note: All documents must be current, notarized where required, and submitted in 
     });
   };
 
-  const handleSendTeamMessage = () => {
-    if (!teamMessage.trim()) return;
-    
-    toast({
-      title: "Message Sent",
-      description: `Message sent to all team members regarding tender ${tenderId}.`,
-    });
-    setTeamMessage("");
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "online":
-        return "bg-green-500";
-      case "away":
-        return "bg-yellow-500";
-      case "offline":
-        return "bg-gray-400";
-      default:
-        return "bg-gray-400";
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
@@ -295,90 +270,6 @@ Note: All documents must be current, notarized where required, and submitted in 
                     <FileText className="w-3 h-3" />
                     <span>4 documents processed</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Team Collaboration
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  CEO can draft messages to team members
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">Message to Team</label>
-                  <Textarea
-                    placeholder="Draft a message to your team about this tender..."
-                    value={teamMessage}
-                    onChange={(e) => setTeamMessage(e.target.value)}
-                    className="text-sm"
-                    rows={3}
-                  />
-                  <Button 
-                    onClick={handleSendTeamMessage}
-                    size="sm" 
-                    className="w-full"
-                    disabled={!teamMessage.trim()}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send to Team
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">Team Members</div>
-                  {teamMembers.map((member, index) => (
-                    <div key={index} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(member.status)}`}></div>
-                        <span className="font-medium">{member.name}</span>
-                      </div>
-                      <span className="text-gray-500">{member.role}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Publisher Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="font-medium text-sm">{publisherData.name}</div>
-                  <div className="text-xs text-gray-600">{publisherData.type}</div>
-                </div>
-                
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-3 h-3 text-gray-400" />
-                    <span>{publisherData.contact}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-3 h-3 text-gray-400" />
-                    <span>{publisherData.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3 text-gray-400" />
-                    <span className="text-xs">{publisherData.address}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Award className="w-3 h-3 text-gray-400" />
-                    <span>Est. {publisherData.established}</span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-gray-600 pt-2 border-t">
-                  <p>{publisherData.description}</p>
                 </div>
               </CardContent>
             </Card>
