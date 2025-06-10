@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Bot, 
@@ -18,12 +17,7 @@ import {
   Eye, 
   Clock, 
   Users, 
-  Zap,
-  Send,
-  Building2,
-  Mail,
-  Phone,
-  Award
+  Zap
 } from "lucide-react";
 
 const TenderDetail = () => {
@@ -31,40 +25,7 @@ const TenderDetail = () => {
   const navigate = useNavigate();
   const [tender, setTender] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<string>("");
-  const [individualMessage, setIndividualMessage] = useState<string>("");
   const { toast } = useToast();
-
-  // Company data
-  const companyData = {
-    name: "SunWorks Ltd",
-    ceo: "Jane Silva",
-    address: "1234 Innovation Drive, San Francisco, CA 94107",
-    phone: "(555) 123-4567",
-    email: "contact@sunworks.com",
-    license: "CA-ELE-2023-8901"
-  };
-
-  // Tender publisher company profile
-  const publisherData = {
-    name: "California Department of Energy",
-    type: "Government Agency",
-    contact: "procurement@energy.ca.gov",
-    phone: "(916) 654-4058",
-    address: "1516 9th Street, Sacramento, CA 95814",
-    website: "www.energy.ca.gov",
-    established: "1975",
-    employees: "2,500+",
-    description: "The California Energy Commission is the state's primary energy policy and planning agency, committed to reducing energy costs and environmental impacts while ensuring a safe, resilient, and clean energy system."
-  };
-
-  // Team members data
-  const teamMembers = [
-    { name: "Mike Johnson", role: "Project Manager", email: "mike@sunworks.com", status: "online" },
-    { name: "Sarah Wilson", role: "Technical Lead", email: "sarah@sunworks.com", status: "online" },
-    { name: "David Chen", role: "Financial Analyst", email: "david@sunworks.com", status: "offline" },
-    { name: "Lisa Rodriguez", role: "Legal Counsel", email: "lisa@sunworks.com", status: "away" }
-  ];
 
   useEffect(() => {
     const fetchTender = async () => {
@@ -91,31 +52,6 @@ const TenderDetail = () => {
   const getDaysLeft = (deadline: string) => {
     const daysLeft = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft;
-  };
-
-  const getTeamStatusColor = (status: string) => {
-    switch (status) {
-      case "online":
-        return "bg-green-500";
-      case "away":
-        return "bg-yellow-500";
-      case "offline":
-        return "bg-gray-400";
-      default:
-        return "bg-gray-400";
-    }
-  };
-
-  const handleSendIndividualMessage = () => {
-    if (!individualMessage.trim() || !selectedTeamMember) return;
-    
-    const member = teamMembers.find(m => m.name === selectedTeamMember);
-    toast({
-      title: "Message Sent",
-      description: `Message sent to ${member?.name} regarding tender ${id}.`,
-    });
-    setIndividualMessage("");
-    setSelectedTeamMember("");
   };
 
   if (loading) {
@@ -302,104 +238,32 @@ const TenderDetail = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Team Collaboration */}
+            {/* Quick Stats */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Team Collaboration
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  CEO can send messages to individual team members
-                </CardDescription>
+                <CardTitle className="text-lg">Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">Select Team Member</label>
-                  <select
-                    value={selectedTeamMember}
-                    onChange={(e) => setSelectedTeamMember(e.target.value)}
-                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white"
-                  >
-                    <option value="">Choose a team member...</option>
-                    {teamMembers.map((member, index) => (
-                      <option key={index} value={member.name}>
-                        {member.name} - {member.role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">Message</label>
-                  <Textarea
-                    placeholder="Draft a message about this tender..."
-                    value={individualMessage}
-                    onChange={(e) => setIndividualMessage(e.target.value)}
-                    className="text-sm"
-                    rows={3}
-                  />
-                  <Button 
-                    onClick={handleSendIndividualMessage}
-                    size="sm" 
-                    className="w-full"
-                    disabled={!individualMessage.trim() || !selectedTeamMember}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send Message
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">Team Members</div>
-                  {teamMembers.map((member, index) => (
-                    <div key={index} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${getTeamStatusColor(member.status)}`}></div>
-                        <span className="font-medium">{member.name}</span>
-                      </div>
-                      <span className="text-gray-500">{member.role}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Publisher Profile */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Publisher Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="font-medium text-sm">{publisherData.name}</div>
-                  <div className="text-xs text-gray-600">{publisherData.type}</div>
-                </div>
-                
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-3 h-3 text-gray-400" />
-                    <span>{publisherData.contact}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="w-4 h-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">Views</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-3 h-3 text-gray-400" />
-                    <span>{publisherData.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3 text-gray-400" />
-                    <span className="text-xs">{publisherData.address}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Award className="w-3 h-3 text-gray-400" />
-                    <span>Est. {publisherData.established}</span>
-                  </div>
+                  <span className="font-medium">1,247</span>
                 </div>
-
-                <div className="text-xs text-gray-600 pt-2 border-t">
-                  <p>{publisherData.description}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Users className="w-4 h-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">Interested</span>
+                  </div>
+                  <span className="font-medium">23</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">Time Left</span>
+                  </div>
+                  <span className="font-medium">{daysLeft > 0 ? `${daysLeft} days` : 'Expired'}</span>
                 </div>
               </CardContent>
             </Card>
