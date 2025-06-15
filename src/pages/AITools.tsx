@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare, Send } from "lucide-react";
+import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare, Send, Users, Building2, Mail, Phone, MapPin, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AIChat from "@/components/AIChat";
 
@@ -13,6 +15,7 @@ const AITools = () => {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [teamMessage, setTeamMessage] = useState("");
 
   // Dummy company data
   const companyData = {
@@ -23,6 +26,27 @@ const AITools = () => {
     email: "contact@sunworks.com",
     license: "CA-ELE-2023-8901"
   };
+
+  // Tender publisher company profile
+  const publisherData = {
+    name: "California Department of Energy",
+    type: "Government Agency",
+    contact: "procurement@energy.ca.gov",
+    phone: "(916) 654-4058",
+    address: "1516 9th Street, Sacramento, CA 95814",
+    website: "www.energy.ca.gov",
+    established: "1975",
+    employees: "2,500+",
+    description: "The California Energy Commission is the state's primary energy policy and planning agency, committed to reducing energy costs and environmental impacts while ensuring a safe, resilient, and clean energy system."
+  };
+
+  // Team members data
+  const teamMembers = [
+    { name: "Mike Johnson", role: "Project Manager", email: "mike@sunworks.com", status: "online" },
+    { name: "Sarah Wilson", role: "Technical Lead", email: "sarah@sunworks.com", status: "online" },
+    { name: "David Chen", role: "Financial Analyst", email: "david@sunworks.com", status: "offline" },
+    { name: "Lisa Rodriguez", role: "Legal Counsel", email: "lisa@sunworks.com", status: "away" }
+  ];
 
   // Updated AI analysis results with new content
   const analysisResults = {
@@ -161,6 +185,29 @@ Note: All documents must be current, notarized where required, and submitted in 
     });
   };
 
+  const handleSendTeamMessage = () => {
+    if (!teamMessage.trim()) return;
+    
+    toast({
+      title: "Message Sent",
+      description: `Message sent to all team members regarding tender ${tenderId}.`,
+    });
+    setTeamMessage("");
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "online":
+        return "bg-green-500";
+      case "away":
+        return "bg-yellow-500";
+      case "offline":
+        return "bg-gray-400";
+      default:
+        return "bg-gray-400";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
@@ -195,7 +242,7 @@ Note: All documents must be current, notarized where required, and submitted in 
         </div>
 
         <div className="grid lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-sm">
@@ -252,7 +299,91 @@ Note: All documents must be current, notarized where required, and submitted in 
               </CardContent>
             </Card>
 
-            <Card className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-sm">
+                  <Users className="w-4 h-4 mr-2" />
+                  Team Collaboration
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  CEO can draft messages to team members
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-700">Message to Team</label>
+                  <Textarea
+                    placeholder="Draft a message to your team about this tender..."
+                    value={teamMessage}
+                    onChange={(e) => setTeamMessage(e.target.value)}
+                    className="text-sm"
+                    rows={3}
+                  />
+                  <Button 
+                    onClick={handleSendTeamMessage}
+                    size="sm" 
+                    className="w-full"
+                    disabled={!teamMessage.trim()}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    Send to Team
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">Team Members</div>
+                  {teamMembers.map((member, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(member.status)}`}></div>
+                        <span className="font-medium">{member.name}</span>
+                      </div>
+                      <span className="text-gray-500">{member.role}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-sm">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Publisher Profile
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <div className="font-medium text-sm">{publisherData.name}</div>
+                  <div className="text-xs text-gray-600">{publisherData.type}</div>
+                </div>
+                
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="w-3 h-3 text-gray-400" />
+                    <span>{publisherData.contact}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Phone className="w-3 h-3 text-gray-400" />
+                    <span>{publisherData.phone}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-3 h-3 text-gray-400" />
+                    <span className="text-xs">{publisherData.address}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-3 h-3 text-gray-400" />
+                    <span>Est. {publisherData.established}</span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-600 pt-2 border-t">
+                  <p>{publisherData.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Company Profile</CardTitle>
               </CardHeader>
