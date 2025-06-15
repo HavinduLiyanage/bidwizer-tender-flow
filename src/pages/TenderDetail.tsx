@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,13 @@ import {
   Users, 
   Zap
 } from "lucide-react";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+
+// Set workerSrc using the public directory to avoid Vite import issues
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 const TenderDetail = () => {
   const { id } = useParams();
@@ -26,6 +32,8 @@ const TenderDetail = () => {
   const [tender, setTender] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [numPages, setNumPages] = useState<number>(0);
 
   useEffect(() => {
     const fetchTender = async () => {
@@ -53,6 +61,10 @@ const TenderDetail = () => {
     const daysLeft = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft;
   };
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+  }
 
   if (loading) {
     return (
@@ -84,6 +96,7 @@ const TenderDetail = () => {
   }
 
   const daysLeft = getDaysLeft(tender.deadline);
+  const normalizedPath = tender.filePath ? tender.filePath.replace(/\\/g, '/') : '';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,19 +181,6 @@ const TenderDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Description */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
-                  Project Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">{tender.description}</p>
-              </CardContent>
-            </Card>
-
             {/* Advertisement Image */}
             <Card>
               <CardHeader>
@@ -190,14 +190,63 @@ const TenderDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-gray-100 rounded-lg p-8 text-center">
-                  <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Eye className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                      <p className="text-gray-600">Advertisement Image</p>
-                      <p className="text-sm text-gray-500 mt-2">Project promotional content from publisher</p>
+                {tender.advertisementImagePath ? (
+                  <div className="flex justify-center items-center">
+                    <img
+                      src={`http://localhost:4000/${tender.advertisementImagePath}`}
+                      alt="Advertisement"
+                      className="rounded-lg max-h-64 object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 rounded-lg p-8 text-center">
+                    <div className="w-full h-64 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <Eye className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                        <p className="text-gray-600">No Advertisement Image</p>
+                        <p className="text-sm text-gray-500 mt-2">Project promotional content from publisher</p>
+                      </div>
                     </div>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Requirements */}
+            {tender.requirements && Array.isArray(tender.requirements) && tender.requirements.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Key Requirements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc pl-6 text-gray-700">
+                    {tender.requirements.map((req: string, idx: number) => (
+                      <li key={idx}>{req}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Contact Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Contact Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-gray-700">
+                  <div><span className="font-medium">Name:</span> {tender.contactPersonName || 'N/A'}</div>
+                  <div><span className="font-medium">Phone:</span> {tender.contactNumber || 'N/A'}</div>
+                  <div><span className="font-medium">Email:</span> {tender.contactEmail || 'N/A'}</div>
+                  {tender.companyWebsite && (
+                    <div><span className="font-medium">Website:</span> <a href={tender.companyWebsite} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">{tender.companyWebsite}</a></div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -220,16 +269,54 @@ const TenderDetail = () => {
                         <p className="text-sm text-gray-600">Complete specifications and requirements</p>
                       </div>
                     </div>
-                    <Button asChild>
-                      <a
-                        href={`http://localhost:4000/${tender.filePath}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </a>
-                    </Button>
+                    <Dialog open={open} onOpenChange={setOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="mt-2" onClick={() => setOpen(true)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col">
+                        <div
+                          style={{
+                            flex: 1,
+                            overflow: "auto",
+                            position: "relative",
+                            userSelect: "none",
+                          }}
+                          onContextMenu={e => e.preventDefault()}
+                        >
+                          <Document
+                            file={`http://localhost:4000/${normalizedPath}`}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            loading="Loading PDF..."
+                            renderMode="canvas"
+                          >
+                            {Array.from(new Array(numPages), (el, index) => (
+                              <Page
+                                key={`page_${index + 1}`}
+                                pageNumber={index + 1}
+                                renderAnnotationLayer={false}
+                                renderTextLayer={false}
+                              />
+                            ))}
+                          </Document>
+                          {/* Overlay to discourage screenshots */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 0, left: 0, right: 0, bottom: 0,
+                              pointerEvents: "none",
+                              background: "rgba(255,255,255,0.01)",
+                              zIndex: 10,
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          Downloading, printing, and screenshots are restricted for this document.
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </CardContent>

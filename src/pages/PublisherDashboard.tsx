@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,29 +77,44 @@ const PublisherDashboard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Tender data:", tenderData);
-    toast({
-      title: "Tender Published Successfully",
-      description: "Your tender has been published and is now available to bidders.",
-    });
-    
-    // Reset form
-    setTenderData({
-      title: "",
-      deadline: "",
-      preBidMeetingDate: "",
-      preBidMeetingTime: "",
-      region: "",
-      value: "",
-      category: "",
-      contactPersonName: "",
-      contactNumber: "",
-      contactEmail: "",
-      companyWebsite: "",
-      requirements: [""],
-      documents: [],
-      advertisementImage: null
-    });
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('publisherId', user.id);
+      formData.append('title', tenderData.title);
+      formData.append('description', tenderData.description || '');
+      formData.append('deadline', tenderData.deadline);
+      formData.append('value', tenderData.value || '');
+      formData.append('category', tenderData.category || '');
+      formData.append('preBidMeetingDate', tenderData.preBidMeetingDate || '');
+      formData.append('preBidMeetingTime', tenderData.preBidMeetingTime || '');
+      formData.append('region', tenderData.region || '');
+      formData.append('contactPersonName', tenderData.contactPersonName || '');
+      formData.append('contactNumber', tenderData.contactNumber || '');
+      formData.append('contactEmail', tenderData.contactEmail || '');
+      formData.append('companyWebsite', tenderData.companyWebsite || '');
+      formData.append('requirements', JSON.stringify(tenderData.requirements));
+
+      if (tenderData.documents[0]) {
+        formData.append('file', tenderData.documents[0]);
+      }
+      if (tenderData.advertisementImage) {
+        formData.append('advertisementImage', tenderData.advertisementImage);
+      }
+
+      const response = await fetch('http://localhost:4000/api/tenders', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload tender');
+      toast({ title: 'Tender Published Successfully' });
+      // Reset form, etc.
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to upload tender', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

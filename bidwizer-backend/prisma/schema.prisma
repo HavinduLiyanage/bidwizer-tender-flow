@@ -24,13 +24,24 @@ model User {
 }
 
 model Tender {
-  id          Int      @id @default(autoincrement())
-  publisher   User     @relation(fields: [publisherId], references: [id])
-  publisherId Int
-  title       String
-  description String
-  deadline    DateTime
-  filePath    String
-  status      String   // "active", "closed", etc.
-  createdAt   DateTime @default(now())
+  id                      Int      @id @default(autoincrement())
+  publisherId             Int
+  title                   String
+  description             String?
+  deadline                DateTime
+  filePath                String?
+  advertisementImagePath  String?
+  tenderText              String?
+  status                  String
+  value                   String?
+  category                String?
+  preBidMeetingDate       DateTime?
+  preBidMeetingTime       String?
+  region                  String?
+  contactPersonName       String?
+  contactNumber           String?
+  contactEmail            String?
+  companyWebsite          String?
+  requirements            String?
+  publisher               User     @relation(fields: [publisherId], references: [id])
 }

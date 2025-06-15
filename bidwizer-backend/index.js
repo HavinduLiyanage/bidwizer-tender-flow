@@ -5,6 +5,8 @@ const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
 const { OpenAI } = require('openai');
+const pdfParse = require('pdf-parse');
+const fs = require('fs');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -39,21 +41,90 @@ app.get('/api/tenders/:id', async (req, res) => {
     include: { publisher: true }
   });
   if (!tender) return res.status(404).json({ error: 'Not found' });
+  if (tender && tender.requirements) {
+    try {
+      tender.requirements = JSON.parse(tender.requirements);
+    } catch {
+      tender.requirements = [];
+    }
+  }
   res.json(tender);
 });
 
 // Upload tender (publisher only)
-app.post('/api/tenders', upload.single('file'), async (req, res) => {
-  const { publisherId, title, description, deadline } = req.body;
-  const filePath = req.file ? req.file.path : '';
+app.post('/api/tenders', upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'advertisementImage', maxCount: 1 }
+]), async (req, res) => {
+  console.log('BODY:', req.body);
+  console.log('FILES:', req.files);
+
+  const {
+    publisherId, title, description, deadline, value, category,
+    preBidMeetingDate, preBidMeetingTime, region,
+    contactPersonName, contactNumber, contactEmail, companyWebsite, requirements
+  } = req.body;
+
+  // Handle tender document file
+  let filePath = '';
+  let tenderText = '';
+  if (req.files['file'] && req.files['file'][0]) {
+    const file = req.files['file'][0];
+    const ext = path.extname(file.originalname) || '.pdf';
+    const newPath = file.path + ext;
+    fs.renameSync(file.path, newPath);
+    filePath = newPath.replace(/\\/g, '/');
+
+    // Extract text from PDF
+    if (ext === '.pdf') {
+      const dataBuffer = fs.readFileSync(newPath);
+      const pdfData = await pdfParse(dataBuffer);
+      tenderText = pdfData.text;
+    }
+  }
+
+  // Handle advertisement image
+  let advertisementImagePath = '';
+  if (req.files['advertisementImage'] && req.files['advertisementImage'][0]) {
+    const img = req.files['advertisementImage'][0];
+    const imgExt = path.extname(img.originalname) || '';
+    const imgNewPath = img.path + imgExt;
+    fs.renameSync(img.path, imgNewPath);
+    advertisementImagePath = imgNewPath.replace(/\\/g, '/');
+  }
+
+  // Parse requirements if sent as JSON string
+  let requirementsToSave = null;
+  if (requirements) {
+    try {
+      requirementsToSave = JSON.stringify(JSON.parse(requirements));
+    } catch {
+      requirementsToSave = JSON.stringify(requirements);
+    }
+  }
+
+  const safe = (v) => (v === undefined || v === '' ? null : v);
+
   const tender = await prisma.tender.create({
     data: {
       publisherId: parseInt(publisherId),
       title,
-      description,
-      deadline: new Date(deadline),
+      description: safe(description),
+      deadline: deadline ? new Date(deadline) : null,
       filePath,
-      status: 'active'
+      advertisementImagePath,
+      tenderText,
+      status: 'active',
+      value: safe(value),
+      category: safe(category),
+      preBidMeetingDate: preBidMeetingDate ? new Date(preBidMeetingDate) : null,
+      preBidMeetingTime: safe(preBidMeetingTime),
+      region: safe(region),
+      contactPersonName: safe(contactPersonName),
+      contactNumber: safe(contactNumber),
+      contactEmail: safe(contactEmail),
+      companyWebsite: safe(companyWebsite),
+      requirements: requirementsToSave,
     }
   });
   res.json(tender);

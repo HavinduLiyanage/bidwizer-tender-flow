@@ -135,39 +135,6 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <FileText className="w-8 h-8 text-green-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">5</p>
-                  <p className="text-sm text-gray-600">Active Proposals</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Calendar className="w-8 h-8 text-orange-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">3</p>
-                  <p className="text-sm text-gray-600">Due This Week</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="w-8 h-8 text-purple-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">8</p>
-                  <p className="text-sm text-gray-600">Team Members</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-4 items-center">
