@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
     title: "",
+    description: "",
     deadline: "",
     preBidMeetingDate: "",
     preBidMeetingTime: "",
@@ -198,6 +199,17 @@ const PublisherDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Tender Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Provide a detailed description of the tender requirements, scope of work, and any specific instructions..."
+                  value={tenderData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  rows={4}
+                />
               </div>
 
               <div className="space-y-4">
