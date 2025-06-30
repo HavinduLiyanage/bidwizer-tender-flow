@@ -64,7 +64,7 @@ const Plans = () => {
                     <span>Email support</span>
                   </div>
                 </div>
-                <Link to="/register?plan=basic" className="block">
+                <Link to="/multi-step-register?plan=basic" className="block">
                   <Button className="w-full py-6 text-lg font-semibold rounded-xl">
                     Get Started
                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -120,7 +120,7 @@ const Plans = () => {
                     <span>Analytics & reporting</span>
                   </div>
                 </div>
-                <Link to="/register?plan=pro" className="block">
+                <Link to="/multi-step-register?plan=pro" className="block">
                   <Button className="w-full py-6 text-lg font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
                     Get Started
                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -170,7 +170,7 @@ const Plans = () => {
                     <span>API access & webhooks</span>
                   </div>
                 </div>
-                <Link to="/register?plan=unlimited" className="block">
+                <Link to="/multi-step-register?plan=unlimited" className="block">
                   <Button className="w-full py-6 text-lg font-semibold rounded-xl">
                     Contact Sales
                     <ArrowRight className="ml-2 w-5 h-5" />

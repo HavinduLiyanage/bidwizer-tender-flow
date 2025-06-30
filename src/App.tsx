@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Plans from "./pages/Plans";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import MultiStepRegister from "./pages/MultiStepRegister";
 import PublisherAuth from "./pages/PublisherAuth";
 import PublisherDashboard from "./pages/PublisherDashboard";
 import Dashboard from "./pages/Dashboard";  
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/plans" element={<Plans />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/multi-step-register" element={<MultiStepRegister />} />
           <Route path="/publisher-auth" element={<PublisherAuth />} />
           <Route path="/publisher-dashboard" element={<PublisherDashboard />} />
           <Route path="/tender-stats" element={<TenderStats />} />
