@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +13,6 @@ interface StepOneProps {
 
 const StepOne = ({ data, onUpdate, onNext }: StepOneProps) => {
   const [selectedPlan, setSelectedPlan] = useState(data.plan || "pro");
-  const [seats, setSeats] = useState(data.seats || 1);
-  const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
   const planDetails = {
@@ -23,59 +20,49 @@ const StepOne = ({ data, onUpdate, onNext }: StepOneProps) => {
       name: "Basic", 
       price: 99, 
       color: "bg-gray-100 text-gray-700",
-      features: ["Up to 5 team members", "20 tenders per month", "Basic AI analysis", "Standard templates", "Email support"]
+      features: ["Up to 5 team members", "20 tenders per month", "Basic AI analysis", "Standard templates", "Email support"],
+      seats: 5
     },
     pro: { 
       name: "Pro", 
       price: 299, 
       color: "bg-blue-100 text-blue-700",
-      features: ["Up to 10 team members", "Unlimited tenders", "Advanced AI tools", "Custom templates", "Priority support", "Analytics & reporting"]
+      features: ["Up to 10 team members", "Unlimited tenders", "Advanced AI tools", "Custom templates", "Priority support", "Analytics & reporting"],
+      seats: 10
     },
     unlimited: { 
       name: "Unlimited", 
       price: 599, 
       color: "bg-purple-100 text-purple-700",
-      features: ["Unlimited team members", "Unlimited everything", "White-label options", "Custom integrations", "Dedicated support", "API access"]
+      features: ["Unlimited team members", "Unlimited everything", "White-label options", "Custom integrations", "Dedicated support", "API access"],
+      seats: 999 // Use a high number to represent unlimited
     },
   };
 
   const handlePlanSelect = (plan: string) => {
     setSelectedPlan(plan);
-    setSeats(1); // Reset seats when changing plan
-  };
-
-  const adjustSeats = (increment: boolean) => {
-    const maxSeats = selectedPlan === "basic" ? 5 : selectedPlan === "pro" ? 10 : 999;
-    if (increment && seats < maxSeats) {
-      setSeats(seats + 1);
-    } else if (!increment && seats > 1) {
-      setSeats(seats - 1);
-    }
   };
 
   const calculateTotal = () => {
     const basePrice = planDetails[selectedPlan as keyof typeof planDetails].price;
-    return basePrice * seats;
+    return basePrice;
   };
 
   const handlePayment = async () => {
-    setProcessing(true);
-    
+    // Set seats based on plan
+    const seats = planDetails[selectedPlan as keyof typeof planDetails].seats;
     // Simulate payment processing
-    setTimeout(() => {
-      onUpdate({ 
-        plan: selectedPlan, 
-        seats: seats, 
-        paymentSuccess: true,
-        totalAmount: calculateTotal()
-      });
-      toast({
-        title: "Payment Successful!",
-        description: "Your payment has been processed. Let's set up your account.",
-      });
-      onNext();
-      setProcessing(false);
-    }, 2000);
+    onUpdate({ 
+      plan: selectedPlan, 
+      seats: seats, 
+      paymentSuccess: true,
+      totalAmount: calculateTotal()
+    });
+    toast({
+      title: "Payment Successful!",
+      description: "Your payment has been processed. Let's set up your account.",
+    });
+    onNext();
   };
 
   return (
@@ -127,33 +114,6 @@ const StepOne = ({ data, onUpdate, onNext }: StepOneProps) => {
         ))}
       </div>
 
-      {/* Seats Selection */}
-      <div className="bg-gray-50 p-6 rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Number of Seats</h3>
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => adjustSeats(false)}
-            disabled={seats <= 1}
-          >
-            <Minus className="w-4 h-4" />
-          </Button>
-          <span className="text-xl font-semibold w-16 text-center">{seats}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => adjustSeats(true)}
-            disabled={
-              (selectedPlan === "basic" && seats >= 5) ||
-              (selectedPlan === "pro" && seats >= 10)
-            }
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
       {/* Total & Payment */}
       <div className="bg-blue-50 p-6 rounded-lg">
         <div className="flex justify-between items-center mb-4">
@@ -162,10 +122,9 @@ const StepOne = ({ data, onUpdate, onNext }: StepOneProps) => {
         </div>
         <Button 
           onClick={handlePayment}
-          disabled={processing}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl"
         >
-          {processing ? "Processing Payment..." : "Continue to Payment"}
+          Continue to Payment
         </Button>
       </div>
     </div>

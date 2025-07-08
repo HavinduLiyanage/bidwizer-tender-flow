@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,11 +85,11 @@ const StepThree = ({ data, onUpdate, onNext }: StepThreeProps) => {
             <span className="font-semibold">Team Capacity</span>
           </div>
           <Badge variant="outline">
-            {teamMembers.length + 1} / {maxSeats} seats used
+            {teamMembers.length + 1} / {maxSeats} seats used (fixed by plan)
           </Badge>
         </div>
         <p className="text-sm text-gray-600">
-          You have {remainingSeats} available seats for team members (admin seat already reserved)
+          You can invite up to {remainingSeats} team members. The number of seats is determined by your selected plan.
         </p>
       </div>
 
@@ -140,14 +139,6 @@ const StepThree = ({ data, onUpdate, onNext }: StepThreeProps) => {
           </div>
         </div>
       )}
-
-      {/* CSV Upload Option */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-gray-600 mb-2">Have a large team?</p>
-        <Button variant="outline">Upload CSV File</Button>
-        <p className="text-xs text-gray-500 mt-2">Format: email1@company.com, email2@company.com</p>
-      </div>
 
       {/* Action Buttons */}
       <div className="flex space-x-4">

@@ -1,26 +1,53 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.user.createMany({
-    data: [
-      {
-        name: 'Publisher One',
-        email: 'publisher@bidwizer.com',
-        password: 'test123', // In production, hash this!
-        role: 'publisher',
-        status: 'active'
+  // Clear existing data
+  await prisma.bidderProfile.deleteMany();
+  await prisma.publisherProfile.deleteMany();
+  await prisma.user.deleteMany();
+
+  // Create dummy bidder
+  const bidderPassword = await bcrypt.hash('bidder123', 10);
+  const bidder = await prisma.user.create({
+    data: {
+      name: 'Bidder User',
+      email: 'bidder@example.com',
+      password: bidderPassword,
+      role: 'bidder',
+      status: 'active',
+      bidderProfile: {
+        create: {
+          position: 'Manager',
+        },
       },
-      {
-        name: 'Bidder One',
-        email: 'bidder@bidwizer.com',
-        password: 'test123',
-        role: 'bidder',
-        status: 'active'
-      }
-    ],
-    skipDuplicates: true
+    },
+    include: { bidderProfile: true },
   });
+
+  // Create dummy publisher
+  const publisherPassword = await bcrypt.hash('publisher123', 10);
+  const publisher = await prisma.user.create({
+    data: {
+      name: 'Publisher User',
+      email: 'publisher@example.com',
+      password: publisherPassword,
+      role: 'publisher',
+      status: 'active',
+      publisherProfile: {
+        create: {
+          position: 'CEO',
+        },
+      },
+    },
+    include: { publisherProfile: true },
+  });
+
+  console.log('Seeded users:', { bidder, publisher });
 }
 
-main().then(() => prisma.$disconnect());
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+}).finally(() => prisma.$disconnect());

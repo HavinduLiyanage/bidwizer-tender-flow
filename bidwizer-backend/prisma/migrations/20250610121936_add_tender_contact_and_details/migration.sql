@@ -9,3 +9,6 @@ ADD COLUMN     "preBidMeetingTime" TEXT,
 ADD COLUMN     "region" TEXT,
 ADD COLUMN     "requirements" TEXT,
 ADD COLUMN     "value" TEXT;
+
+ALTER TABLE "User" ADD COLUMN     "position" TEXT;
+ALTER TABLE "User" ADD COLUMN     "confirmToken" TEXT;

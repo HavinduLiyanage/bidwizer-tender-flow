@@ -13,6 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Team {
+  id   Int    @id @default(autoincrement())
+  name String
+  plan String @default("basic") // 'basic' or 'pro'
+  users User[]
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   name     String
@@ -20,7 +27,30 @@ model User {
   password String
   role     String // "publisher" or "bidder"
   status   String // "active" or "pending"
+  position String? // CEO, Manager, etc.
+  confirmToken      String?
+  confirmTokenExpiry DateTime?
+  teamId   Int?
+  team     Team?   @relation(fields: [teamId], references: [id])
+  bidderProfile    BidderProfile?
+  publisherProfile PublisherProfile?
   tenders  Tender[]
+}
+
+model BidderProfile {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+  position String? // CEO, Manager, etc.
+  // Add bidder-specific fields here
+}
+
+model PublisherProfile {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+  position String? // CEO, Manager, etc.
+  // Add publisher-specific fields here
 }
 
 model Tender {
@@ -32,6 +62,7 @@ model Tender {
   filePath                String?
   advertisementImagePath  String?
   tenderText              String?
+  chunkEmbeddings         String? // Added for AI chunk embeddings
   status                  String
   value                   String?
   category                String?
@@ -44,4 +75,12 @@ model Tender {
   companyWebsite          String?
   requirements            String?
   publisher               User     @relation(fields: [publisherId], references: [id])
+}
+
+model ReferenceEmbedding {
+  id         Int    @id @default(autoincrement())
+  fileName   String
+  chunkIndex Int
+  chunkText  String
+  embedding  Bytes
 }

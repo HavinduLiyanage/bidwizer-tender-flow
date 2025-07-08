@@ -124,12 +124,7 @@ const PublisherDashboard = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-2 rounded-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">BidWizer</span>
-            </Link>
+            <div />
             
             <div className="flex items-center space-x-4">
               <Link to="/tender-stats">

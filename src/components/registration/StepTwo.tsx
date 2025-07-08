@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
     companyName: "",
   });
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string) => {
@@ -32,7 +32,6 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -41,23 +40,57 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
       });
       return;
     }
-
     setLoading(true);
-    
-    // Simulate email verification process
-    setTimeout(() => {
-      onUpdate({ 
-        adminData: formData,
-        emailVerificationSent: true 
+    try {
+      // Submit to backend
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.firstName + " " + formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          role: "admin",
+          position: formData.position,
+        }),
       });
+      const result = await res.json();
+      if (res.ok) {
+        setEmailSent(true);
+        onUpdate({ adminData: formData, emailVerificationSent: true });
+        toast({
+          title: "Verification Email Sent!",
+          description: "Please check your email to verify your account.",
+        });
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: result.error || "Could not register. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
       toast({
-        title: "Verification Email Sent!",
-        description: "Please check your email to verify your account.",
+        title: "Network Error",
+        description: "Could not connect to server.",
+        variant: "destructive",
       });
-      onNext();
-      setLoading(false);
-    }, 1500);
+    }
+    setLoading(false);
   };
+
+  if (emailSent) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700">Check Your Email</h2>
+        <p className="text-gray-700 mb-6">We've sent a confirmation link to <b>{formData.email}</b>.<br />Please confirm your email to continue registration.</p>
+        <div className="flex justify-center">
+          <Mail className="w-12 h-12 text-blue-500" />
+        </div>
+        <p className="mt-8 text-gray-500">Didn't receive the email? Check your spam folder or <a href="mailto:support@bidwizer.com" className="text-blue-600 underline">contact support</a>.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

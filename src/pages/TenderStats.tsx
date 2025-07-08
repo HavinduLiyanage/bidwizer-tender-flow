@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,56 +6,44 @@ import { Link } from "react-router-dom";
 import { Zap, Eye, Calendar, Clock, TrendingUp, FileText, Plus, BarChart3 } from "lucide-react";
 
 const TenderStats = () => {
-  // Mock data for demonstration - in real app this would come from API
-  const [tenders] = useState([
-    {
-      id: 1,
-      title: "Construction of Highway Bridge",
-      category: "Construction",
-      publishDate: "2024-01-15",
-      deadline: "2024-02-15",
-      preBidMeeting: "2024-01-25",
-      viewCount: 245,
-      bidCount: 12,
-      status: "Active",
-      value: "$2,500,000"
-    },
-    {
-      id: 2,
-      title: "IT Infrastructure Upgrade",
-      category: "Information Technology",
-      publishDate: "2024-01-10",
-      deadline: "2024-01-30",
-      preBidMeeting: "2024-01-20",
-      viewCount: 189,
-      bidCount: 8,
-      status: "Active",
-      value: "$450,000"
-    },
-    {
-      id: 3,
-      title: "Office Renovation Project",
-      category: "Construction",
-      publishDate: "2023-12-20",
-      deadline: "2024-01-05",
-      preBidMeeting: "2023-12-28",
-      viewCount: 156,
-      bidCount: 15,
-      status: "Closed",
-      value: "$180,000"
-    }
-  ]);
+  const [tenders, setTenders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchTenders = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.id) {
+          setError("No publisher ID found. Please log in again.");
+          setLoading(false);
+          return;
+        }
+        const res = await fetch(`http://localhost:4000/api/tenders?publisherId=${user.id}`);
+        if (!res.ok) throw new Error("Failed to fetch tenders");
+        const data = await res.json();
+        setTenders(data);
+      } catch (err) {
+        setError("Failed to load tenders");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTenders();
+  }, []);
 
   const totalTenders = tenders.length;
-  const activeTenders = tenders.filter(t => t.status === "Active").length;
-  const totalViews = tenders.reduce((sum, t) => sum + t.viewCount, 0);
-  const totalBids = tenders.reduce((sum, t) => sum + t.bidCount, 0);
+  const activeTenders = tenders.filter((t: any) => t.status && t.status.toLowerCase() === "active").length;
+  const totalViews = tenders.reduce((sum: number, t: any) => sum + (t.viewCount || 0), 0);
+  const totalBids = tenders.reduce((sum: number, t: any) => sum + (t.bidCount || 0), 0);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
+    switch (status?.toLowerCase()) {
+      case "active":
         return "bg-green-100 text-green-800";
-      case "Closed":
+      case "closed":
         return "bg-gray-100 text-gray-800";
       default:
         return "bg-blue-100 text-blue-800";
@@ -64,12 +51,16 @@ const TenderStats = () => {
   };
 
   const getDaysRemaining = (deadline: string) => {
+    if (!deadline) return "-";
     const today = new Date();
     const deadlineDate = new Date(deadline);
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? `${diffDays} days left` : "Expired";
   };
+
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
@@ -185,7 +176,7 @@ const TenderStats = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tenders.map((tender) => (
+                {tenders.map((tender: any) => (
                   <TableRow key={tender.id}>
                     <TableCell className="font-medium">{tender.title}</TableCell>
                     <TableCell>{tender.category}</TableCell>
@@ -198,20 +189,20 @@ const TenderStats = () => {
                     <TableCell>
                       <div className="flex items-center">
                         <Eye className="w-4 h-4 mr-1 text-gray-400" />
-                        {tender.viewCount}
+                        {tender.viewCount || 0}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1 text-gray-400" />
-                        {tender.bidCount}
+                        {tender.bidCount || 0}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div className="text-gray-600">Published: {tender.publishDate}</div>
+                        <div className="text-gray-600">Published: {tender.createdAt ? new Date(tender.createdAt).toLocaleDateString() : "-"}</div>
                         <div className="text-gray-900 font-medium">
-                          Deadline: {tender.deadline}
+                          Deadline: {tender.deadline ? new Date(tender.deadline).toLocaleDateString() : "-"}
                         </div>
                         <div className="text-orange-600 text-xs">
                           {getDaysRemaining(tender.deadline)}
@@ -221,7 +212,7 @@ const TenderStats = () => {
                     <TableCell>
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {tender.preBidMeeting}
+                        {tender.preBidMeetingDate ? new Date(tender.preBidMeetingDate).toLocaleDateString() : "-"}
                       </div>
                     </TableCell>
                   </TableRow>

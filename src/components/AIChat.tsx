@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,11 +13,13 @@ interface Message {
 }
 
 interface AIChatProps {
+  tenderId: string;
   tenderTitle: string;
   isAnalysisComplete: boolean;
+  tenderText: string;
 }
 
-const AIChat = ({ tenderTitle, isAnalysisComplete }: AIChatProps) => {
+const AIChat = ({ tenderId, tenderTitle, isAnalysisComplete, tenderText }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -29,6 +30,7 @@ const AIChat = ({ tenderTitle, isAnalysisComplete }: AIChatProps) => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,46 +52,28 @@ const AIChat = ({ tenderTitle, isAnalysisComplete }: AIChatProps) => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage);
+    try {
+      const response = await fetch('http://localhost:4000/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenderId, question: inputMessage })
+      });
+      const data = await response.json();
+      let aiContent = data.answer || data.raw || data.error || 'Sorry, I could not answer that.';
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: aiResponse,
+        content: aiContent,
         sender: 'ai',
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, aiMessage]);
+    } catch (err) {
+      setError('Failed to get AI response. Please try again.');
+    } finally {
       setIsTyping(false);
-    }, 2000);
-  };
-
-  const generateAIResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('requirement') || input.includes('criteria')) {
-      return "Based on the tender analysis, the key requirements include: 10MW solar installation, licensed electrical contractor certification, minimum 5 years experience, and $1M+ working capital. The scoring criteria prioritizes technical approach (40%), experience (30%), price (20%), and local workforce (10%).";
     }
-    
-    if (input.includes('deadline') || input.includes('timeline')) {
-      return "The submission deadline is July 30, 2025. I recommend starting the proposal preparation immediately, allowing 2-3 weeks for technical documentation, 1 week for pricing, and 1 week for final review and submission.";
-    }
-    
-    if (input.includes('competition') || input.includes('competitors')) {
-      return "This tender is likely to attract 8-15 qualified bidders. To stand out, emphasize your local presence, recent similar projects, and competitive pricing. Your 8+ years of solar experience gives you a strong advantage.";
-    }
-    
-    if (input.includes('price') || input.includes('cost') || input.includes('budget')) {
-      return "The tender value is estimated at $2.5M-$5M. Based on similar projects, I recommend pricing around $3.2M to be competitive while maintaining healthy margins. Focus on value-added services in your proposal.";
-    }
-    
-    if (input.includes('team') || input.includes('personnel')) {
-      return "For this project, you'll need a project manager, 2-3 electrical engineers, site supervisor, and 8-12 installation technicians. Highlight any local workforce in your proposal as it's worth 10% of the total score.";
-    }
-    
-    return "I understand your question about the solar power facility tender. Could you be more specific about what aspect you'd like to discuss? I can help with requirements, timeline, pricing strategy, competition analysis, or any technical details.";
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -120,7 +104,7 @@ const AIChat = ({ tenderTitle, isAnalysisComplete }: AIChatProps) => {
                 </div>
                 <Card className={`${message.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white'}`}>
                   <CardContent className="p-3">
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm" style={{ whiteSpace: 'pre-line' }}>{message.content}</p>
                     <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </p>

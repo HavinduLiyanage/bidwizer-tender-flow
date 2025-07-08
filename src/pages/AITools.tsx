@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +8,20 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Copy, Download, RefreshCw, Zap, CheckCircle, Clock, FileText, Bot, MessageSquare, Send, Users, Building2, Mail, Phone, MapPin, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AIChat from "@/components/AIChat";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import jsPDF from "jspdf";
+
+const SUPPLEMENTARY_DOCS = [
+  { key: 'environmentalLicense', label: 'Environmental License' },
+  { key: 'isoCertificate', label: 'ISO Certificate' },
+  { key: 'companyProfile', label: 'Company Profile' },
+  { key: 'tradeLicense', label: 'Trade License' },
+  { key: 'brochure', label: 'Brochure' },
+  { key: 'financialReports', label: 'Last 5 Years of Financial Reports' },
+  { key: 'staffDetail', label: 'Staff Detail' },
+  { key: 'availabilityOfFunds', label: 'Availability of Funds' },
+  { key: 'awards', label: 'Awards' },
+];
 
 const AITools = () => {
   const { tenderId } = useParams();
@@ -16,6 +29,21 @@ const AITools = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [teamMessage, setTeamMessage] = useState("");
+  const [brief, setBrief] = useState<any>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
+  const [tenderText, setTenderText] = useState<string>("");
+  const [coverLetter, setCoverLetter] = useState<string>("");
+  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
+  const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
+  const [tenderTitle, setTenderTitle] = useState("");
+  const [releaseLetter, setReleaseLetter] = useState("");
+  const [releaseLetterLoading, setReleaseLetterLoading] = useState(false);
+  const [releaseLetterError, setReleaseLetterError] = useState<string | null>(null);
+  const [showReleaseLetter, setShowReleaseLetter] = useState(false);
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
 
   // Dummy company data
   const companyData = {
@@ -83,31 +111,6 @@ Evaluation Criteria:
 • Price competitiveness (20%)
 • Local economic impact (10%)`,
 
-    coverLetter: `Dear Procurement Officer,
-
-${companyData.name} is pleased to submit our proposal for the Construction of Solar Power Facility tender. As a leading solar contractor with over 8 years of experience in utility-scale installations, we are uniquely positioned to deliver this critical infrastructure project.
-
-Our company has successfully completed 15+ utility-scale solar projects totaling over 150MW across California, including similar 10MW installations for municipal and state agencies. Our certified team of engineers and electricians brings deep expertise in grid-tied solar systems, regulatory compliance, and project management.
-
-Key qualifications that make us the ideal partner:
-
-• Licensed electrical contractor (License #${companyData.license})
-• Proven track record with government solar projects
-• Strong financial position with $2.5M working capital  
-• Commitment to local workforce development
-• ISO 9001 certified quality management systems
-
-We understand the critical importance of this renewable energy initiative and are committed to delivering exceptional value while meeting all technical specifications and timeline requirements. Our proposed approach emphasizes quality, safety, and long-term performance.
-
-We look forward to the opportunity to discuss how ${companyData.name} can contribute to this important sustainability project.
-
-Sincerely,
-
-${companyData.ceo}
-Chief Executive Officer
-${companyData.name}
-${companyData.phone} | ${companyData.email}`,
-
     supplementaryDocuments: `SUPPLEMENTARY DOCUMENTS CHECKLIST
 
 Required Documentation Package:
@@ -157,6 +160,44 @@ Required Documentation Package:
 Note: All documents must be current, notarized where required, and submitted in both digital and hard copy formats as specified in the tender requirements.`
   };
 
+  // Simulate company uploaded docs (in real app, fetch from backend)
+  const companyDocs = SUPPLEMENTARY_DOCS.map(doc => ({
+    ...doc,
+    uploaded: true, // Assume all are uploaded for now
+    fileName: `${doc.label.replace(/ /g, '_').toLowerCase()}.pdf`,
+  }));
+
+  const handleDocToggle = (key: string) => {
+    setSelectedDocs(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
+  useEffect(() => {
+    const fetchBrief = async () => {
+      setBriefLoading(true);
+      setBriefError(null);
+      try {
+        // Fetch the tender details to get the extracted text and title
+        const tenderRes = await fetch(`http://localhost:4000/api/tenders/${tenderId}`);
+        const tenderData = await tenderRes.json();
+        setTenderText(tenderData.tenderText || "");
+        setTenderTitle(tenderData.title || "");
+        // Fetch the structured summary from the backend
+        const res = await fetch("http://localhost:4000/api/ai/summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenderText: tenderData.tenderText || "" })
+        });
+        const data = await res.json();
+        setBrief(data);
+      } catch (err) {
+        setBriefError("Failed to load tender brief.");
+      } finally {
+        setBriefLoading(false);
+      }
+    };
+    fetchBrief();
+  }, [tenderId]);
+
   const handleRunAnalysis = () => {
     setIsAnalyzing(true);
     // Simulate AI processing time
@@ -178,11 +219,32 @@ Note: All documents must be current, notarized where required, and submitted in 
     });
   };
 
-  const handleReleaseDocument = () => {
-    toast({
-      title: "Document Released",
-      description: "Tender document has been released to relevant office personnel.",
-    });
+  const handleReleaseDocument = async () => {
+    setReleaseLetter("");
+    setReleaseLetterError(null);
+    setReleaseLetterLoading(true);
+    setReleaseDialogOpen(true);
+    try {
+      const response = await fetch("http://localhost:4000/api/ai/release-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenderTitle,
+          authorizedPerson: publisherData.contact || publisherData.name || "Authorized Officer",
+          companyProfile: companyData
+        })
+      });
+      const data = await response.json();
+      if (data.letter) {
+        setReleaseLetter(data.letter);
+      } else {
+        setReleaseLetterError("Failed to generate release letter.");
+      }
+    } catch (err) {
+      setReleaseLetterError("Failed to generate release letter.");
+    } finally {
+      setReleaseLetterLoading(false);
+    }
   };
 
   const handleSendTeamMessage = () => {
@@ -208,16 +270,56 @@ Note: All documents must be current, notarized where required, and submitted in 
     }
   };
 
+  const generateCoverLetter = async () => {
+    setCoverLetterLoading(true);
+    setCoverLetterError(null);
+    try {
+      const response = await fetch("http://localhost:4000/api/ai/cover-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenderText,
+          companyProfile: companyData
+        })
+      });
+      const data = await response.json();
+      if (data.letter) {
+        setCoverLetter(data.letter);
+      } else {
+        setCoverLetterError("Failed to generate cover letter.");
+      }
+    } catch (err) {
+      setCoverLetterError("Failed to generate cover letter.");
+    } finally {
+      setCoverLetterLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (analysisComplete && tenderText && companyData) {
+      generateCoverLetter();
+    }
+    // eslint-disable-next-line
+  }, [analysisComplete, tenderText]);
+
+  const handleDownloadReleaseLetter = () => {
+    if (!releaseLetter) return;
+    const doc = new jsPDF();
+    // Split text into lines for PDF
+    const lines = doc.splitTextToSize(releaseLetter, 180);
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+    doc.text(lines, 15, 20);
+    doc.save("release-letter.pdf");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">BidWizer AI Tools</span>
+              {/* Logo removed */}
             </div>
             
             <div className="flex items-center space-x-4">
@@ -276,14 +378,78 @@ Note: All documents must be current, notarized where required, and submitted in 
                 )}
 
                 {analysisComplete && (
-                  <Button 
-                    onClick={handleReleaseDocument}
-                    variant="outline"
-                    className="w-full mt-4"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Release to Office
-                  </Button>
+                  <>
+                    <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          onClick={handleReleaseDocument}
+                          variant="outline"
+                          className="w-full mt-4"
+                          disabled={releaseLetterLoading}
+                        >
+                          <Send className="w-4 h-4 mr-2" />Release to Office
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl w-full h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <div className="flex justify-between items-center w-full">
+                            <DialogTitle>Release Letter</DialogTitle>
+                          </div>
+                        </DialogHeader>
+                        {releaseLetterLoading ? (
+                          <div className="text-xs text-blue-600 mt-2">Generating release letter...</div>
+                        ) : releaseLetterError ? (
+                          <div className="text-xs text-red-600 mt-2">{releaseLetterError}</div>
+                        ) : releaseLetter ? (
+                          <>
+                            <pre className="whitespace-pre-wrap text-base text-gray-800 font-serif leading-relaxed mb-4 max-h-[60vh] overflow-y-auto bg-white p-4 rounded shadow-inner border">
+                              {releaseLetter}
+                            </pre>
+                            <div className="text-sm text-gray-700 mb-4">
+                              The download button below will download all relevant documents for this tender for your company, including the cover letter, release letter, and selected supplementary documents.
+                            </div>
+                            <Button size="lg" variant="default" onClick={handleDownloadReleaseLetter}>
+                              Download All Documents
+                            </Button>
+                          </>
+                        ) : null}
+                      </DialogContent>
+                    </Dialog>
+                    <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="w-full mt-2"
+                          disabled={selectedDocs.length === 0}
+                        >
+                          Download Relevant Documents
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg w-full">
+                        <DialogHeader>
+                          <DialogTitle>Download Confirmation</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <p className="mb-2 text-gray-700">You are about to download the following files:</p>
+                          <ul className="list-disc pl-6 text-sm text-gray-800 mb-4">
+                            <li>Cover Letter (docx)</li>
+                            <li>Release Letter (docx)</li>
+                            {selectedDocs.map(key => {
+                              const doc = companyDocs.find(d => d.key === key);
+                              return doc ? <li key={key}>{doc.label} ({doc.fileName})</li> : null;
+                            })}
+                          </ul>
+                          <div className="flex justify-end gap-2">
+                            <DialogClose asChild>
+                              <Button variant="secondary">Cancel</Button>
+                            </DialogClose>
+                            <Button variant="default" onClick={() => { setDownloadDialogOpen(false); toast({ title: 'Download started', description: 'Your files are being prepared.' }); }}>Confirm Download</Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 )}
 
                 <div className="space-y-2 text-xs text-gray-600">
@@ -295,52 +461,6 @@ Note: All documents must be current, notarized where required, and submitted in 
                     <FileText className="w-3 h-3" />
                     <span>4 documents processed</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Team Collaboration
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  CEO can draft messages to team members
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">Message to Team</label>
-                  <Textarea
-                    placeholder="Draft a message to your team about this tender..."
-                    value={teamMessage}
-                    onChange={(e) => setTeamMessage(e.target.value)}
-                    className="text-sm"
-                    rows={3}
-                  />
-                  <Button 
-                    onClick={handleSendTeamMessage}
-                    size="sm" 
-                    className="w-full"
-                    disabled={!teamMessage.trim()}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send to Team
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">Team Members</div>
-                  {teamMembers.map((member, index) => (
-                    <div key={index} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(member.status)}`}></div>
-                        <span className="font-medium">{member.name}</span>
-                      </div>
-                      <span className="text-gray-500">{member.role}</span>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -418,38 +538,45 @@ Note: All documents must be current, notarized where required, and submitted in 
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       Tender Brief Summary
-                      {analysisComplete && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCopy(analysisResults.tenderBrief, "Tender brief")}
-                          >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Regenerate
-                          </Button>
-                        </div>
-                      )}
                     </CardTitle>
                     <CardDescription>
-                      AI-generated summary of key tender information and requirements
+                      AI-extracted key tender information and requirements
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!analysisComplete ? (
                       <div className="text-center py-12 text-gray-500">
                         <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="font-semibold">You must run AI analysis to activate this feature.</p>
+                        <p>Click the <b>Run Analysis</b> button in the left panel to get started.</p>
+                      </div>
+                    ) : briefLoading ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>Loading tender brief...</p>
+                      </div>
+                    ) : briefError ? (
+                      <div className="text-center py-12 text-red-500">{briefError}</div>
+                    ) : !brief ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
                         <p>Run AI analysis to see tender brief</p>
                       </div>
                     ) : (
                       <div className="prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-                          {analysisResults.tenderBrief}
-                        </pre>
+                        {typeof brief.summary === 'string' ? (
+                          <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">{brief.summary}</pre>
+                        ) : (
+                          <ul className="list-disc pl-6 text-sm text-gray-700">
+                            <li><b>Brief Description:</b> {brief.briefDescription}</li>
+                            <li><b>Value:</b> {brief.value}</li>
+                            <li><b>Source of Funds:</b> {brief.sourceOfFunds}</li>
+                            <li><b>Experience Criteria:</b> {brief.experienceCriteria}</li>
+                            <li><b>Financial Criteria:</b> {brief.financialCriteria}</li>
+                            <li><b>Time Duration:</b> {brief.timeDuration}</li>
+                            <li><b>Special Requirements:</b> {brief.specialRequirements}</li>
+                          </ul>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -461,26 +588,6 @@ Note: All documents must be current, notarized where required, and submitted in 
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       AI-Generated Cover Letter
-                      {analysisComplete && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCopy(analysisResults.coverLetter, "Cover letter")}
-                          >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Export DOC
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Regenerate
-                          </Button>
-                        </div>
-                      )}
                     </CardTitle>
                     <CardDescription>
                       Professional cover letter tailored to this tender
@@ -490,13 +597,21 @@ Note: All documents must be current, notarized where required, and submitted in 
                     {!analysisComplete ? (
                       <div className="text-center py-12 text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Run AI analysis to generate cover letter</p>
+                        <p className="font-semibold">You must run AI analysis to activate this feature.</p>
+                        <p>Click the <b>Run Analysis</b> button in the left panel to get started.</p>
                       </div>
+                    ) : coverLetterLoading ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-50 animate-spin" />
+                        <p>Generating cover letter...</p>
+                      </div>
+                    ) : coverLetterError ? (
+                      <div className="text-center py-12 text-red-500">{coverLetterError}</div>
                     ) : (
                       <div className="prose prose-sm max-w-none">
                         <div className="bg-white border p-6 rounded-lg shadow-sm">
                           <pre className="whitespace-pre-wrap text-sm text-gray-700 font-serif leading-relaxed">
-                            {analysisResults.coverLetter}
+                            {coverLetter}
                           </pre>
                         </div>
                       </div>
@@ -510,38 +625,33 @@ Note: All documents must be current, notarized where required, and submitted in 
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       Supplementary Documents Checklist
-                      {analysisComplete && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCopy(analysisResults.supplementaryDocuments, "Supplementary documents")}
-                          >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Regenerate
-                          </Button>
-                        </div>
-                      )}
                     </CardTitle>
                     <CardDescription>
-                      Required documents and certifications for tender submission
+                      Select the documents you want to include for this tender
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!analysisComplete ? (
                       <div className="text-center py-12 text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Run AI analysis to generate document checklist</p>
+                        <p className="font-semibold">You must run AI analysis to activate this feature.</p>
+                        <p>Click the <b>Run Analysis</b> button in the left panel to get started.</p>
                       </div>
                     ) : (
-                      <div className="prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-                          {analysisResults.supplementaryDocuments}
-                        </pre>
+                      <div className="space-y-2 mb-6">
+                        {companyDocs.map(doc => (
+                          <label key={doc.key} className={`flex items-center space-x-3 p-2 rounded ${!doc.uploaded ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDocs.includes(doc.key)}
+                              onChange={() => handleDocToggle(doc.key)}
+                              disabled={!doc.uploaded}
+                              className="form-checkbox h-5 w-5 text-blue-600"
+                            />
+                            <span className="text-sm">{doc.label}</span>
+                            {!doc.uploaded && <span className="text-xs text-red-500 ml-2">Not uploaded</span>}
+                          </label>
+                        ))}
                       </div>
                     )}
                   </CardContent>
@@ -560,10 +670,20 @@ Note: All documents must be current, notarized where required, and submitted in 
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <AIChat 
-                      tenderTitle="Construction of Solar Power Facility"
-                      isAnalysisComplete={analysisComplete}
-                    />
+                    {!analysisComplete ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="font-semibold">You must run AI analysis to activate this feature.</p>
+                        <p>Click the <b>Run Analysis</b> button in the left panel to get started.</p>
+                      </div>
+                    ) : (
+                      <AIChat 
+                        tenderId={tenderId as string}
+                        tenderTitle={tenderTitle}
+                        isAnalysisComplete={analysisComplete}
+                        tenderText={tenderText}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

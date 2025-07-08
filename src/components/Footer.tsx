@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Zap } from "lucide-react";
 
@@ -8,12 +7,6 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-4 gap-8">
           <div className="col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold">BidWizer</span>
-            </div>
             <p className="text-gray-400">
               AI-powered tender management for modern businesses.
             </p>
