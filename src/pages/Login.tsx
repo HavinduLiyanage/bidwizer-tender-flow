@@ -34,9 +34,9 @@ const Login = () => {
         description: "Redirecting to your dashboard...",
       });
       // Redirect based on role
-      if (user.role === "bidder") {
+      if (user.user && user.user.role === "BIDDER") {
         navigate("/dashboard"); // or your bidder dashboard route
-      } else if (user.role === "publisher") {
+      } else if (user.user && user.user.role === "PUBLISHER") {
         navigate("/publisher-dashboard");
       }
     } catch (err) {

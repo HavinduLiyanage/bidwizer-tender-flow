@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, Upload, Users, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { setAuth } from "@/lib/auth";
 
 const PublisherAuth = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -34,20 +35,24 @@ const PublisherAuth = () => {
           password: loginData.password,
         }),
       });
+      const result = await response.json();
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        let description = "Invalid email or password.";
+        if (result.error && result.error.includes("confirm your email")) {
+          description = "Please confirm your email before logging in. Check your inbox.";
+        }
+        throw new Error(description);
       }
-      const user = await response.json();
-      localStorage.setItem("user", JSON.stringify(user));
+      setAuth(result.token, result.user);
       toast({
         title: "Login Successful",
         description: "Welcome to your publisher dashboard!",
       });
       navigate("/publisher-dashboard");
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password.",
+        description: err.message || "Invalid email or password.",
         variant: "destructive",
       });
     } finally {

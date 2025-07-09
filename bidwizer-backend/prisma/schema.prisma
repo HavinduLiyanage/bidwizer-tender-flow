@@ -13,68 +13,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Team {
-  id   Int    @id @default(autoincrement())
-  name String
-  plan String @default("basic") // 'basic' or 'pro'
-  users User[]
+enum UserRole {
+  BIDDER
+  PUBLISHER
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum PlanType {
+  BASIC
+  PRO
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  plan      PlanType @default(BASIC)
+  users     User[]
+  documents Document[]
+  createdAt DateTime @default(now())
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-  role     String // "publisher" or "bidder"
-  status   String // "active" or "pending"
-  position String? // CEO, Manager, etc.
-  confirmToken      String?
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  status    UserStatus @default(INVITED)
+  position  String?   // User's job title or position
+  confirmToken String?
   confirmTokenExpiry DateTime?
-  teamId   Int?
-  team     Team?   @relation(fields: [teamId], references: [id])
-  bidderProfile    BidderProfile?
-  publisherProfile PublisherProfile?
-  tenders  Tender[]
+  companyId Int?     // Only for bidders
+  company   Company? @relation(fields: [companyId], references: [id])
+  uploadedDocuments Document[] @relation("UserUploadedDocuments")
+  publishedTenders Tender[] @relation("UserPublishedTenders")
+  createdAt DateTime @default(now())
 }
 
-model BidderProfile {
-  id     Int  @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int  @unique
-  position String? // CEO, Manager, etc.
-  // Add bidder-specific fields here
-}
-
-model PublisherProfile {
-  id     Int  @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int  @unique
-  position String? // CEO, Manager, etc.
-  // Add publisher-specific fields here
+model Document {
+  id           Int      @id @default(autoincrement())
+  companyId    Int?     // Only for bidders
+  company      Company? @relation(fields: [companyId], references: [id])
+  uploadedById Int
+  uploadedBy   User     @relation("UserUploadedDocuments", fields: [uploadedById], references: [id])
+  name         String
+  type         String
+  category     String?
+  description  String?
+  uploadDate   DateTime @default(now())
+  filePath     String
+  status       DocumentStatus @default(ACTIVE)
+  tags         String[]
+  metadata     Json?
 }
 
 model Tender {
-  id                      Int      @id @default(autoincrement())
-  publisherId             Int
-  title                   String
-  description             String?
-  deadline                DateTime
-  filePath                String?
+  id           Int      @id @default(autoincrement())
+  publisherId  Int      // Only for publishers
+  publisher    User     @relation("UserPublishedTenders", fields: [publisherId], references: [id])
+  title        String
+  description  String?
+  deadline     DateTime
+  filePath     String?
   advertisementImagePath  String?
-  tenderText              String?
-  chunkEmbeddings         String? // Added for AI chunk embeddings
-  status                  String
-  value                   String?
-  category                String?
-  preBidMeetingDate       DateTime?
-  preBidMeetingTime       String?
-  region                  String?
-  contactPersonName       String?
-  contactNumber           String?
-  contactEmail            String?
-  companyWebsite          String?
-  requirements            String?
-  publisher               User     @relation(fields: [publisherId], references: [id])
+  tenderText   String?
+  chunkEmbeddings String?
+  status       String
+  value        String?
+  category     String?
+  preBidMeetingDate DateTime?
+  preBidMeetingTime String?
+  region       String?
+  contactPersonName String?
+  contactNumber String?
+  contactEmail String?
+  companyWebsite String?
+  requirements String?
 }
 
 model ReferenceEmbedding {

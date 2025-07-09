@@ -17,7 +17,9 @@ import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 import BidderDashboard from "./pages/Dashboard";
 import TenderStats from "./pages/TenderStats";
+import ConfirmEmail from "./pages/ConfirmEmail";
 import { useEffect } from "react";
+import JoinTeam from "./pages/JoinTeam";
 
 const queryClient = new QueryClient();
 
@@ -44,12 +46,14 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/multi-step-register" element={<MultiStepRegister />} />
+          <Route path="/confirm-email" element={<ConfirmEmail />} />
           <Route path="/publisher-auth" element={<PublisherAuth />} />
           <Route path="/publisher-dashboard" element={<PublisherDashboard />} />
           <Route path="/tender-stats" element={<TenderStats />} />
           <Route path="/dashboard" element={<BidderDashboard />} />
           <Route path="/tender/:id" element={<TenderDetail />} />
           <Route path="/ai-tools/:tenderId" element={<AITools />} />
+          <Route path="/join-team" element={<JoinTeam />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

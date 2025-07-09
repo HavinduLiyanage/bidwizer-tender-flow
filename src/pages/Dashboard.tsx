@@ -31,60 +31,20 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Dummy tender with complete data
-  const dummyTender = {
-    id: 999,
-    title: "Construction of 10MW Solar Power Facility",
-    description: "Design, construction, and commissioning of a 10MW solar photovoltaic power facility including grid interconnection, monitoring systems, and 25-year operational maintenance. The project requires compliance with California environmental regulations and local workforce preferences. Successful bidder will be responsible for all permits, equipment procurement, installation, testing, and performance guarantees.",
-    category: "Renewable Energy",
-    region: "California",
-    deadline: "2024-02-15T23:59:00.000Z",
-    value: "$2,500,000 - $3,200,000",
-    status: "Active",
-    publishDate: "2024-01-05",
-    filePath: "uploads/solar-facility-tender.pdf",
-    views: 1247,
-    interestedBidders: 23,
-    publisher: {
-      name: "California Department of Energy",
-      type: "Government Agency",
-      contact: "procurement@energy.ca.gov",
-      phone: "(916) 654-4058",
-      address: "1516 9th Street, Sacramento, CA 95814",
-      website: "www.energy.ca.gov"
-    },
-    advertisementImage: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=400&fit=crop",
-    requirements: [
-      "Licensed electrical contractor in California",
-      "Minimum 5 years solar installation experience",
-      "Financial capacity of $1M+ working capital",
-      "NABCEP certified installation team",
-      "Experience with utility-scale projects >5MW"
-    ],
-    submissionDeadline: "2024-02-15",
-    preBidMeeting: "2024-01-25",
-    estimatedStartDate: "2024-03-01",
-    projectDuration: "6 months construction + 25 years O&M"
-  };
-
   useEffect(() => {
     const fetchTenders = async () => {
       try {
         const res = await fetch("http://localhost:4000/api/tenders");
         const data = await res.json();
         
-        // Add the dummy tender to the fetched data
-        const allTenders = [dummyTender, ...data];
-        setTenders(allTenders);
-        setFilteredTenders(allTenders);
+        setTenders(data);
+        setFilteredTenders(data);
       } catch (err) {
         console.error("Error fetching tenders:", err);
-        // If API fails, just show the dummy tender
-        setTenders([dummyTender]);
-        setFilteredTenders([dummyTender]);
         toast({
-          title: "Info",
-          description: "Showing sample data. Connect to backend for live tenders.",
+          title: "Error",
+          description: "Failed to fetch tenders. Please try again later.",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);

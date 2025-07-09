@@ -50,7 +50,7 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
           name: formData.firstName + " " + formData.lastName,
           email: formData.email,
           password: formData.password,
-          role: "admin",
+          role: "BIDDER", // Use uppercase to match backend
           position: formData.position,
         }),
       });
@@ -58,6 +58,7 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
       if (res.ok) {
         setEmailSent(true);
         onUpdate({ adminData: formData, emailVerificationSent: true });
+        localStorage.setItem("adminEmail", formData.email); // Persist admin email
         toast({
           title: "Verification Email Sent!",
           description: "Please check your email to verify your account.",

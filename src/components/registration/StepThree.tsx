@@ -53,17 +53,49 @@ const StepThree = ({ data, onUpdate, onNext }: StepThreeProps) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    
-    // Simulate sending invitations
-    setTimeout(() => {
+    try {
+      let adminEmail = data.adminData?.email;
+      if (!adminEmail) {
+        adminEmail = localStorage.getItem("adminEmail"); // Fallback to localStorage
+      }
+      if (!adminEmail) {
+        toast({
+          title: "Invite Failed",
+          description: "Missing or invalid admin email. Please log in again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      const res = await fetch("/api/invite-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminEmail, teamMembers }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast({
+          title: "Invite Failed",
+          description: result.error || "Could not send invites. Please try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       onUpdate({ teamMembers });
       toast({
         title: "Invitations Sent!",
         description: `${teamMembers.length} team members have been invited.`,
       });
       onNext();
-      setLoading(false);
-    }, 1500);
+    } catch (err) {
+      toast({
+        title: "Network Error",
+        description: "Could not connect to server.",
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
   };
 
   const handleSkip = () => {

@@ -13,16 +13,27 @@ const MultiStepRegister = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const initialPlan = searchParams.get("plan") || "pro";
-  const [currentStep, setCurrentStep] = useState(1);
+  // Read step and emailConfirmed from location.state if present
+  const initialStep = location.state?.step || 1;
+  const initialEmailConfirmed = location.state?.emailConfirmed || false;
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [registrationData, setRegistrationData] = useState({
     plan: initialPlan,
-    seats: 1,
+    seats: initialPlan === "pro" ? 5 : 4,
     paymentSuccess: false,
     adminData: {},
     teamMembers: [],
     companyProfile: {},
-    emailConfirmed: false,
+    emailConfirmed: initialEmailConfirmed,
   });
+
+  // Update seats if plan changes
+  useEffect(() => {
+    setRegistrationData(prev => ({
+      ...prev,
+      seats: prev.plan === "pro" ? 5 : 4,
+    }));
+  }, [registrationData.plan]);
 
   // Check for /confirm route
   useEffect(() => {

@@ -26,6 +26,7 @@ app.use(express.json({ limit: '5mb' }));
 
 // File upload setup
 const upload = multer({ dest: 'uploads/' });
+const documentUpload = multer({ dest: 'uploads/' });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -179,7 +180,7 @@ app.post('/api/login', async (req, res) => {
   if (!valid) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
-  if (user.status !== 'active') {
+  if (user.status !== 'ACTIVE') {
     return res.status(403).json({ error: 'Please confirm your email before logging in.' });
   }
   // Issue JWT
@@ -224,7 +225,7 @@ app.get('/api/tenders/:id', async (req, res) => {
 });
 
 // Upload tender (publisher only)
-app.post('/api/tenders', upload.fields([
+app.post('/api/tenders', authenticateJWT, upload.fields([
   { name: 'file', maxCount: 1 },
   { name: 'advertisementImage', maxCount: 1 }
 ]), async (req, res) => {
@@ -564,10 +565,9 @@ function isStrongPassword(password) {
   return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=]{8,}$/.test(password);
 }
 
-// Registration endpoint for admin (bidder/manager/ceo)
+// Registration endpoint for admin (bidder or publisher)
 app.post('/api/register', async (req, res) => {
   const { name, email, password, role, position } = req.body;
-  // Input validation
   if (!name || typeof name !== 'string' || name.length < 2) {
     return res.status(400).json({ error: 'Invalid name' });
   }
@@ -577,87 +577,61 @@ app.post('/api/register', async (req, res) => {
   if (!password || !isStrongPassword(password)) {
     return res.status(400).json({ error: 'Password must be at least 8 characters and include at least one letter and one number.' });
   }
-  if (!role || typeof role !== 'string') {
+  if (!role || (role !== 'BIDDER' && role !== 'PUBLISHER')) {
     return res.status(400).json({ error: 'Invalid role' });
   }
-  // Sanitize position (optional field)
   const safePosition = position && typeof position === 'string' ? position.replace(/[^a-zA-Z0-9 .,-]/g, '') : '';
-  // Check if user exists
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return res.status(409).json({ error: 'Email already registered' });
   }
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 12); // Stronger salt
-  // Generate confirmation token and expiry (24 hours from now)
+  const hashedPassword = await bcrypt.hash(password, 12);
   const token = crypto.randomBytes(32).toString('hex');
-  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
   try {
-    let teamId = null;
-    if (role.trim().toLowerCase() === 'bidder') {
-      // Create a new team for this bidder admin
-      const team = await prisma.team.create({ data: { name: name.trim(), plan: 'basic' } });
-      teamId = team.id;
+    let companyId = null;
+    if (role === 'BIDDER') {
+      const company = await prisma.company.create({ data: { name: name.trim(), plan: 'BASIC' } });
+      companyId = company.id;
     }
-    // Transaction: create user and profile
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        role: role.trim(),
-        status: 'pending',
+        role,
+        status: 'INVITED',
         position: safePosition,
         confirmToken: token,
         confirmTokenExpiry: expiry,
-        teamId: teamId || undefined,
+        companyId: companyId,
       }
     });
-    if (role.trim().toLowerCase() === 'bidder') {
-      await prisma.bidderProfile.create({ data: { userId: user.id, position: safePosition } });
-    } else if (role.trim().toLowerCase() === 'publisher') {
-      await prisma.publisherProfile.create({ data: { userId: user.id, position: safePosition } });
-    }
     // Send confirmation email
     const confirmUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/confirm-email?token=${token}&email=${encodeURIComponent(email)}`;
     await transporter.sendMail({
       from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
       to: email,
       subject: 'Confirm your BidWizer account',
-      html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;">
-          <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' />
-              <h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">Welcome to BidWizer!</h2>
-            </div>
-            <p style="color: #3b4252; font-size: 1.1rem;">Hello <b>${name}</b>,</p>
-            <p style="color: #3b4252;">Thank you for registering your organization with BidWizer. To continue setting up your account, please confirm your email address by clicking the button below. This link will expire in 24 hours.</p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${confirmUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Confirm Email</a>
-            </div>
-            <p style="color: #64748b; font-size: 0.97rem;">If you did not request this, you can safely ignore this email.</p>
-            <div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div>
-          </div>
-        </div>
-      `,
+      html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">Welcome to BidWizer!</h2></div><p style="color: #3b4252; font-size: 1.1rem;">Hello <b>${name}</b>,</p><p style="color: #3b4252;">Thank you for registering your organization with BidWizer. To continue setting up your account, please confirm your email address by clicking the button below. This link will expire in 24 hours.</p><div style="text-align: center; margin: 32px 0;"><a href="${confirmUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Confirm Email</a></div><p style="color: #64748b; font-size: 0.97rem;">If you did not request this, you can safely ignore this email.</p><div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
     });
     res.json({ message: 'Registration successful. Please check your email to confirm your account.' });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed. Please try again later.' });
   }
-  // TODO: Add rate limiting to prevent abuse (e.g., express-rate-limit)
 });
 
 // Email confirmation endpoint
 app.get('/api/confirm-email', async (req, res) => {
   try {
     const { token, email } = req.query;
-    if (!token || !email) return res.status(400).json({ error: 'Missing token or email' });
+    if (!token || !email) {
+      return res.status(400).json({ error: 'Missing token or email.' });
+    }
     const user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
-    if (!user || user.status !== 'pending' || user.confirmToken !== token) {
-      return res.status(400).json({ error: 'Invalid or expired confirmation link' });
+    if (!user || user.confirmToken !== token) {
+      return res.status(400).json({ error: 'Invalid or expired confirmation link.' });
     }
     // Check token expiry
     if (!user.confirmTokenExpiry || new Date() > new Date(user.confirmTokenExpiry)) {
@@ -665,16 +639,16 @@ app.get('/api/confirm-email', async (req, res) => {
     }
     await prisma.user.update({
       where: { email: String(email).toLowerCase() },
-      data: { status: 'active', confirmToken: null, confirmTokenExpiry: null },
+      data: { status: 'ACTIVE', confirmToken: null, confirmTokenExpiry: null },
     });
-    res.json({ message: 'Email confirmed. You can now log in.' });
+    res.json({ message: 'Email confirmed! You can now log in.' });
   } catch (err) {
     console.error('Email confirmation error:', err);
     res.status(500).json({ error: 'Email confirmation failed. Please try again later.' });
   }
 });
 
-// Invite team members endpoint (simulated)
+// Invite team members endpoint (company-centric)
 app.post('/api/invite-team', async (req, res) => {
   const { adminEmail, teamMembers } = req.body;
   if (!adminEmail || !isValidEmail(adminEmail)) {
@@ -683,19 +657,19 @@ app.post('/api/invite-team', async (req, res) => {
   if (!Array.isArray(teamMembers) || teamMembers.length === 0) {
     return res.status(400).json({ error: 'No team members provided.' });
   }
-  // Find the admin user and their team
-  const adminUser = await prisma.user.findUnique({ where: { email: adminEmail.toLowerCase() } });
-  if (!adminUser || !adminUser.teamId) {
-    return res.status(400).json({ error: 'Admin user or team not found.' });
+  // Find the admin user and their company
+  const adminUser = await prisma.user.findUnique({ where: { email: adminEmail.toLowerCase() }, include: { company: true } });
+  if (!adminUser || adminUser.role !== 'BIDDER' || !adminUser.companyId) {
+    return res.status(400).json({ error: 'Admin user or company not found.' });
   }
-  const team = await prisma.team.findUnique({ where: { id: adminUser.teamId } });
-  if (!team) {
-    return res.status(400).json({ error: 'Team not found.' });
+  const company = adminUser.company;
+  if (!company) {
+    return res.status(400).json({ error: 'Company not found.' });
   }
-  // Count current users in the team
-  const currentCount = await prisma.user.count({ where: { teamId: team.id } });
+  // Count current users in the company
+  const currentCount = await prisma.user.count({ where: { companyId: company.id } });
   // Determine max allowed based on plan
-  const maxAccounts = team.plan === 'pro' ? 5 : 4;
+  const maxAccounts = company.plan === 'PRO' ? 5 : 4;
   if (currentCount + teamMembers.length > maxAccounts) {
     return res.status(400).json({ error: `Your plan allows up to ${maxAccounts} accounts (including admin). You already have ${currentCount}.` });
   }
@@ -708,24 +682,8 @@ app.post('/api/invite-team', async (req, res) => {
       await transporter.sendMail({
         from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
         to: email,
-        subject: 'You are invited to join a BidWizer team',
-        html: `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;">
-            <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;">
-              <div style="text-align: center; margin-bottom: 24px;">
-                <img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' />
-                <h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">You've been invited to join a team!</h2>
-              </div>
-              <p style="color: #3b4252; font-size: 1.1rem;">Hello,</p>
-              <p style="color: #3b4252;">You have been invited to join a team on BidWizer. Click the button below to create your account and join the team.</p>
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="${inviteUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Join Team</a>
-              </div>
-              <p style="color: #64748b; font-size: 0.97rem;">If you did not expect this invitation, you can safely ignore this email.</p>
-              <div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div>
-            </div>
-          </div>
-        `,
+        subject: 'You are invited to join a BidWizer company',
+        html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">You've been invited to join a company!</h2></div><p style="color: #3b4252; font-size: 1.1rem;">Hello,</p><p style="color: #3b4252;">You have been invited to join a company on BidWizer. Click the button below to create your account and join the company.</p><div style="text-align: center; margin: 32px 0;"><a href="${inviteUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Join Company</a></div><p style="color: #64748b; font-size: 0.97rem;">If you did not expect this invitation, you can safely ignore this email.</p><div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
       });
       sent++;
     } catch (err) {
@@ -733,6 +691,100 @@ app.post('/api/invite-team', async (req, res) => {
     }
   }
   res.json({ message: `Invitations sent to ${sent} team members.` });
+});
+
+// --- Company Document Management ---
+// Upload a document (BIDDER only)
+app.post('/api/documents', authenticateJWT, documentUpload.single('file'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'BIDDER' || !user.companyId) {
+      return res.status(403).json({ error: 'Only bidder users with a company can upload documents.' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    // File type and size validation
+    const allowedTypes = ['.pdf', '.docx', '.xlsx', '.png', '.jpg', '.jpeg'];
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (!allowedTypes.includes(ext)) {
+      fs.unlinkSync(req.file.path); // Remove invalid file
+      return res.status(400).json({ error: 'Unsupported file type.' });
+    }
+    if (req.file.size > 10 * 1024 * 1024) { // 10MB
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'File too large (max 10MB).' });
+    }
+
+    const newPath = req.file.path + ext;
+    fs.renameSync(req.file.path, newPath);
+    const filePath = newPath.replace(/\\/g, '/');
+
+    const { name, type, category, description, tags } = req.body;
+    const document = await prisma.document.create({
+      data: {
+        companyId: user.companyId,
+        uploadedById: userId,
+        name: name || req.file.originalname,
+        type: type || req.file.mimetype,
+        category: category || null,
+        description: description || null,
+        filePath,
+        tags: tags ? JSON.parse(tags) : [],
+        status: 'active',
+        metadata: {
+          size: req.file.size,
+          originalname: req.file.originalname,
+        },
+      },
+    });
+    res.json(document);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Upload failed.' });
+  }
+});
+
+// List all documents for the user's team
+app.get('/api/documents', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.companyId) return res.status(403).json({ error: 'User must belong to a company.' });
+    const documents = await prisma.document.findMany({ where: { companyId: user.companyId, status: 'active' }, orderBy: { uploadDate: 'desc' } });
+    res.json(documents);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch documents.' });
+  }
+});
+
+// Download a document (team only)
+app.get('/api/documents/:id/download', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const docId = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const document = await prisma.document.findUnique({ where: { id: docId } });
+    if (!document || document.companyId !== user.companyId) return res.status(403).json({ error: 'Access denied.' });
+    res.download(path.join(__dirname, '..', document.filePath), document.name);
+  } catch (err) {
+    res.status(500).json({ error: 'Download failed.' });
+  }
+});
+
+// Delete a document (soft delete)
+app.delete('/api/documents/:id', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const docId = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const document = await prisma.document.findUnique({ where: { id: docId } });
+    if (!document || document.companyId !== user.companyId) return res.status(403).json({ error: 'Access denied.' });
+    await prisma.document.update({ where: { id: docId }, data: { status: 'deleted' } });
+    res.json({ message: 'Document deleted.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Delete failed.' });
+  }
 });
 
 const PORT = process.env.PORT || 4000;
