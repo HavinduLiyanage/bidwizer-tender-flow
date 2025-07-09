@@ -622,6 +622,77 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Team member registration endpoint
+app.post('/api/team-member-register', async (req, res) => {
+  const { firstName, lastName, email, password, confirmPassword, position, token, inviteEmail } = req.body;
+  
+  // Validation
+  if (!firstName || typeof firstName !== 'string' || firstName.length < 2) {
+    return res.status(400).json({ error: 'Invalid first name' });
+  }
+  if (!lastName || typeof lastName !== 'string' || lastName.length < 2) {
+    return res.status(400).json({ error: 'Invalid last name' });
+  }
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+  if (!password || !isStrongPassword(password)) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters and include at least one letter and one number.' });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (email.toLowerCase() !== inviteEmail.toLowerCase()) {
+    return res.status(400).json({ error: 'Email does not match the invitation' });
+  }
+  if (!token) {
+    return res.status(400).json({ error: 'Invalid invitation token' });
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (existingUser) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+
+    // TODO: In a real implementation, you would validate the token against a stored invitation
+    // For now, we'll create the user directly
+    
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const safePosition = position && typeof position === 'string' ? position.replace(/[^a-zA-Z0-9 .,-]/g, '') : '';
+
+    // Create the user as a team member (BIDDER role, but not admin)
+    const user = await prisma.user.create({
+      data: {
+        name: fullName,
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        role: 'BIDDER',
+        status: 'ACTIVE', // Team members are immediately active
+        position: safePosition,
+        // Note: companyId should be set based on the invitation token in a real implementation
+        // For now, we'll leave it null and handle it in the business logic
+      }
+    });
+
+    res.json({ 
+      message: 'Account created successfully. You can now login.',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      }
+    });
+  } catch (err) {
+    console.error('Team member registration error:', err);
+    res.status(500).json({ error: 'Registration failed. Please try again later.' });
+  }
+});
+
 // Email confirmation endpoint
 app.get('/api/confirm-email', async (req, res) => {
   try {
