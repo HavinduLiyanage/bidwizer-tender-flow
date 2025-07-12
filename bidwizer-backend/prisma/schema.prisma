@@ -55,7 +55,7 @@ model User {
   position  String?   // User's job title or position
   confirmToken String?
   confirmTokenExpiry DateTime?
-  companyId Int?     // Only for bidders
+  companyId Int?     // For all users
   company   Company? @relation(fields: [companyId], references: [id])
   uploadedDocuments Document[] @relation("UserUploadedDocuments")
   publishedTenders Tender[] @relation("UserPublishedTenders")

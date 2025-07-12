@@ -6,9 +6,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from "react-router-dom";
-import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3, User, Phone, Mail, Globe } from "lucide-react";
+import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3, User, Phone, Mail, Globe, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getUser } from "@/lib/auth";
+import WelcomeHeader from "@/components/dashboard/WelcomeHeader";
+import { logout } from "@/lib/auth";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
@@ -31,16 +41,32 @@ const PublisherDashboard = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const user = getUser();
-    if (!user || user.role !== "PUBLISHER") {
-      navigate("/publisher-auth");
-    }
-  }, [navigate]);
+  const [company, setCompany] = useState<{ name: string } | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [approvalText, setApprovalText] = useState("");
 
   // Get publisher info from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  useEffect(() => {
+    if (!user || user.role !== "PUBLISHER") {
+      navigate("/publisher-auth");
+      return;
+    }
+    // Fetch company info
+    if (user.companyId) {
+      fetch(`http://localhost:4000/api/company/${user.companyId}`)
+        .then(res => res.json())
+        .then(data => setCompany(data))
+        .catch(() => setCompany(null));
+    }
+  }, [navigate, user]);
+
+  // Add logging for debugging
+  useEffect(() => {
+    console.log('User:', user);
+    console.log('Company:', company);
+  }, [user, company]);
 
   const handleInputChange = (field: string, value: string) => {
     setTenderData(prev => ({ ...prev, [field]: value }));
@@ -131,23 +157,51 @@ const PublisherDashboard = () => {
     }
   };
 
+  // Helper to check if all required fields are filled
+  const isFormComplete =
+    tenderData.title.trim() &&
+    tenderData.category.trim() &&
+    tenderData.deadline.trim() &&
+    tenderData.region.trim() &&
+    tenderData.advertisementImage &&
+    tenderData.contactPersonName.trim() &&
+    tenderData.contactNumber.trim() &&
+    tenderData.contactEmail.trim() &&
+    tenderData.requirements.length > 0 &&
+    tenderData.requirements.every(r => r.trim());
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      {/* Enhanced Header */}
+      <div className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div />
-            
+          <div className="flex justify-between items-center h-20">
+            {/* Left side - User greeting */}
             <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full">
+                <User className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Welcome, {user.name || "Publisher"}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {company ? `${company.name.toUpperCase()} Portal` : "Publisher Dashboard"}
+                </p>
+              </div>
+            </div>
+            
+            {/* Right side - Actions */}
+            <div className="flex items-center space-x-3">
               <Link to="/tender-stats">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700">
                   <BarChart3 className="w-4 h-4 mr-2" />
-                  View Stats
+                  View Statistics
                 </Button>
               </Link>
-              <span className="text-sm text-gray-600">Publisher Portal</span>
-              <Button variant="outline" size="sm">
+              <div className="h-6 w-px bg-gray-300"></div>
+              <Button variant="outline" size="sm" className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700" onClick={() => { logout(); navigate("/"); }}>
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -155,13 +209,22 @@ const PublisherDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Personalized Welcome Header */}
+        {company && company.name ? (
+          <WelcomeHeader user={{ ...user, companyName: company.name }} />
+        ) : (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
+            <p className="text-yellow-800 font-semibold">Company information not found for your account. Please contact support.</p>
+          </div>
+        )}
+        
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Publish New Tender</h1>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Publish New Tender</h2>
           <p className="text-gray-600">Create and publish a new tender for qualified bidders to respond to.</p>
         </div>
 
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-lg border-0 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center">
               <FileText className="w-5 h-5 mr-2" />
@@ -225,7 +288,7 @@ const PublisherDashboard = () => {
                   <Image className="w-4 h-4 mr-1" />
                   Tender Advertisement Image *
                 </Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative">
                   <input
                     type="file"
                     onChange={handleImageUpload}
@@ -233,31 +296,41 @@ const PublisherDashboard = () => {
                     id="image-upload"
                     accept="image/*"
                   />
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <Image className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">
-                      Click to upload tender advertisement image
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      JPG, PNG, GIF files accepted
-                    </p>
+                  <label htmlFor="image-upload" className="cursor-pointer w-full block">
+                    {!tenderData.advertisementImage && (
+                      <>
+                        <Image className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">
+                          Click to upload tender advertisement image
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          JPG, PNG, GIF files accepted
+                        </p>
+                      </>
+                    )}
                   </label>
-                </div>
-
-                {tenderData.advertisementImage && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Uploaded Advertisement Image:</p>
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">{tenderData.advertisementImage.name}</span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={removeAdvertisementImage}
-                      >
-                        Remove
-                      </Button>
+                  {tenderData.advertisementImage && (
+                    <div className="mt-4 flex flex-col items-center">
+                      <img
+                        src={URL.createObjectURL(tenderData.advertisementImage)}
+                        alt="Tender Advertisement Preview"
+                        className="rounded shadow border max-h-48 max-w-full object-contain"
+                        style={{ background: '#f8fafc', padding: '8px' }}
+                      />
                     </div>
+                  )}
+                </div>
+                {tenderData.advertisementImage && (
+                  <div className="flex mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="ml-0"
+                      onClick={removeAdvertisementImage}
+                    >
+                      Remove
+                    </Button>
                   </div>
                 )}
               </div>
@@ -442,25 +515,27 @@ const PublisherDashboard = () => {
                   <Upload className="w-4 h-4 mr-1" />
                   Tender Documents
                 </Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">
-                      Click to upload documents or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      PDF, DOC, DOCX, XLS, XLSX files accepted
-                    </p>
-                  </label>
-                </div>
+                {tenderData.documents.length === 0 && (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">
+                        Click to upload documents or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        PDF, DOC, DOCX, XLS, XLSX files accepted
+                      </p>
+                    </label>
+                  </div>
+                )}
 
                 {tenderData.documents.length > 0 && (
                   <div className="space-y-2">
@@ -484,15 +559,52 @@ const PublisherDashboard = () => {
 
               <div className="flex space-x-4 pt-6">
                 <Button
-                  type="submit"
+                  type="button"
                   className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                  disabled={loading}
+                  disabled={loading || !isFormComplete}
+                  onClick={() => setShowConfirm(true)}
                 >
                   {loading ? "Publishing..." : "Publish Tender"}
                 </Button>
-                <Button type="button" variant="outline">
-                  Save as Draft
-                </Button>
+
+                {/* Confirmation Dialog */}
+                <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Security Confirmation</DialogTitle>
+                      <DialogDescription>
+                        To publish this tender, please type <span className="font-mono bg-gray-100 px-1 rounded">I approve to send this tender</span> below.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                      id="approvalText"
+                      placeholder="Type the exact phrase to confirm"
+                      value={approvalText}
+                      onChange={e => setApprovalText(e.target.value)}
+                      required
+                    />
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowConfirm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={approvalText !== "I approve to send this tender" || loading}
+                        onClick={async () => {
+                          setShowConfirm(false);
+                          setApprovalText("");
+                          await handleSubmit(new Event("submit") as any);
+                        }}
+                      >
+                        {loading ? "Publishing..." : "Confirm & Publish"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </form>
           </CardContent>

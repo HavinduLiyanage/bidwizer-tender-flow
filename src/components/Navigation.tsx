@@ -28,7 +28,12 @@ const Navigation = () => {
               Library
             </Link> */}
             {user && (
-              <span className="text-gray-700">Welcome, {user.name || user.email}</span>
+              <span className="text-gray-700">
+                Welcome, {user.name || user.email}
+                {user.companyName && (
+                  <span className="ml-3 font-semibold text-green-700">{user.companyName.toUpperCase()}</span>
+                )}
+              </span>
             )}
             {user ? (
               <Button variant="outline" size="sm" className="text-sm" onClick={handleLogout}>

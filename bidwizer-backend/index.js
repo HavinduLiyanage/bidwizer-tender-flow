@@ -195,7 +195,7 @@ app.post('/api/login', async (req, res) => {
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, companyId: user.companyId }
   });
 });
 
@@ -670,14 +670,22 @@ app.post('/api/publisher/register', async (req, res) => {
   }
   try {
     const hashedPassword = await bcrypt.hash(password, 12);
+    // Create company for publisher
+    const company = await prisma.company.create({
+      data: {
+        name: organizationName,
+        plan: 'BASIC',
+      },
+    });
     const user = await prisma.user.create({
       data: {
         name: contactName,
         email: email.toLowerCase(),
         password: hashedPassword,
         role: 'PUBLISHER',
-        status: 'INVITED', // Use valid UserStatus value
+        status: 'INVITED',
         position: organizationType || null,
+        companyId: company.id,
       },
     });
     // Notify admin
@@ -1049,6 +1057,16 @@ app.get('/api/admin/audit-logs', authenticateJWT, requireAdmin, async (req, res)
     take: 100,
   });
   res.json(logs);
+});
+
+// Get company by ID
+app.get('/api/company/:id', async (req, res) => {
+  const company = await prisma.company.findUnique({
+    where: { id: parseInt(req.params.id) },
+    select: { name: true }
+  });
+  if (!company) return res.status(404).json({ error: 'Company not found' });
+  res.json(company);
 });
 
 const PORT = process.env.PORT || 4000;

@@ -72,6 +72,11 @@ const PublisherAuth = () => {
     }
   };
 
+  const validatePassword = (password: string) => {
+    // At least 8 chars, one uppercase, one lowercase, one number, one special char
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(password);
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterError("");
@@ -81,6 +86,14 @@ const PublisherAuth = () => {
       toast({
         title: "Password Mismatch",
         description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!validatePassword(registerData.password)) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.",
         variant: "destructive",
       });
       return;
@@ -273,6 +286,9 @@ const PublisherAuth = () => {
                               required
                               className="h-12"
                             />
+                            <div className="text-xs text-gray-500 mt-1">
+                              Password must be at least 8 characters, include uppercase, lowercase, number, and special character.
+                            </div>
                           </div>
 
                           <div className="space-y-2">

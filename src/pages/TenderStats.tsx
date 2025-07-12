@@ -37,7 +37,7 @@ const TenderStats = () => {
   const totalTenders = tenders.length;
   const activeTenders = tenders.filter((t: any) => t.status && t.status.toLowerCase() === "active").length;
   const totalViews = tenders.reduce((sum: number, t: any) => sum + (t.viewCount || 0), 0);
-  const totalBids = tenders.reduce((sum: number, t: any) => sum + (t.bidCount || 0), 0);
+  const totalSaves = tenders.reduce((sum: number, t: any) => sum + (t.saveCount || 0), 0);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -83,9 +83,6 @@ const TenderStats = () => {
                 </Button>
               </Link>
               <span className="text-sm text-gray-600">Publisher Portal</span>
-              <Button variant="outline" size="sm">
-                Logout
-              </Button>
             </div>
           </div>
         </div>
@@ -141,8 +138,8 @@ const TenderStats = () => {
               <div className="flex items-center">
                 <TrendingUp className="w-8 h-8 text-orange-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Bids</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalBids}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Saves</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalSaves}</p>
                 </div>
               </div>
             </CardContent>
@@ -170,7 +167,7 @@ const TenderStats = () => {
                   <TableHead>Value</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Views</TableHead>
-                  <TableHead>Bids</TableHead>
+                  <TableHead>Saves</TableHead>
                   <TableHead>Timeline</TableHead>
                   <TableHead>Pre-bid Meeting</TableHead>
                 </TableRow>
@@ -195,7 +192,7 @@ const TenderStats = () => {
                     <TableCell>
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 mr-1 text-gray-400" />
-                        {tender.bidCount || 0}
+                        {tender.saveCount || 0}
                       </div>
                     </TableCell>
                     <TableCell>
