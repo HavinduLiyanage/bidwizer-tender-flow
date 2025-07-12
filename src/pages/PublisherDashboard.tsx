@@ -6,10 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3, User, Phone, Mail, Globe } from "lucide-react";
+import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3, User, Phone, Mail, Globe, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WelcomeHeader from "@/components/dashboard/WelcomeHeader";
-import QuickActions from "@/components/dashboard/QuickActions";
 
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
@@ -122,21 +121,36 @@ const PublisherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      {/* Enhanced Header */}
+      <div className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div />
-            
+          <div className="flex justify-between items-center h-20">
+            {/* Left side - User greeting */}
             <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full">
+                <User className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Welcome, {user.name || "Publisher"}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {user.companyName ? `${user.companyName} Portal` : "Publisher Dashboard"}
+                </p>
+              </div>
+            </div>
+            
+            {/* Right side - Actions */}
+            <div className="flex items-center space-x-3">
               <Link to="/tender-stats">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700">
                   <BarChart3 className="w-4 h-4 mr-2" />
-                  View Stats
+                  View Statistics
                 </Button>
               </Link>
-              <span className="text-sm text-gray-600">Publisher Portal</span>
-              <Button variant="outline" size="sm">
+              <div className="h-6 w-px bg-gray-300"></div>
+              <Button variant="outline" size="sm" className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700">
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -489,11 +503,6 @@ const PublisherDashboard = () => {
             </form>
           </CardContent>
         </Card>
-        
-        {/* Quick Actions at the bottom */}
-        <div className="max-w-md mx-auto">
-          <QuickActions />
-        </div>
       </div>
     </div>
   );
