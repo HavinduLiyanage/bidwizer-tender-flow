@@ -1,73 +1,98 @@
-# Welcome to your Lovable project
+# BidWizer – AI-Powered Tender Management Platform
 
-## Project info
+BidWizer is a modern web application that helps companies find, analyze, and respond to tenders with the power of AI. It streamlines the bidding process for both bidders and publishers, enabling collaboration, document management, and intelligent automation.
 
-**URL**: https://lovable.dev/projects/b9777416-fd83-4668-82cc-445a37f339fe
+---
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **AI-Powered Tender Analysis:** Summarize and query tender documents using OpenAI.
+- **Multi-Step Registration:** Company-centric onboarding for bidders, with team invites and document uploads.
+- **Role-Based Dashboards:** Separate workspaces for bidders, publishers, and admins.
+- **Tender Publishing:** Publishers can create, manage, and track tenders.
+- **Document Library:** Centralized resource center for company documents and templates.
+- **Team Collaboration:** Invite and manage team members (plan-based limits).
+- **Secure Authentication:** JWT-based, with email confirmation and role enforcement.
+- **Admin Controls:** User management, audit logs, and platform analytics.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b9777416-fd83-4668-82cc-445a37f339fe) and start prompting.
+## User Flows
 
-Changes made via Lovable will be committed automatically to this repo.
+### 1. **Bidders**
+- Register company via multi-step onboarding.
+- Confirm email to activate account.
+- Invite team members and upload company documents.
+- Search, analyze, and respond to tenders using AI tools.
 
-**Use your preferred IDE**
+### 2. **Publishers**
+- Register organization and confirm email.
+- Access publisher dashboard to create and manage tenders.
+- View statistics on published tenders.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 3. **Admins**
+- Log in via admin portal.
+- Manage users, approve/reject publishers, and view platform stats.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Tech Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Frontend:** React, TypeScript, Vite, shadcn/ui, React Router
+- **Backend:** Node.js, Express, Prisma ORM
+- **Database:** PostgreSQL
+- **AI:** OpenAI API (for document analysis and Q&A)
+- **Email:** Nodemailer (SMTP)
+- **Authentication:** JWT (JSON Web Tokens)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Local Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Prerequisites
 
-**Edit a file directly in GitHub**
+- Node.js (v18+)
+- PostgreSQL
+- OpenAI API Key
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Setup
 
-**Use GitHub Codespaces**
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-org/bidwizer-tender-flow.git
+   cd bidwizer-tender-flow
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. **Install dependencies:**
+   ```bash
+   cd bidwizer-backend
+   npm install
+   cd ../
+   npm install
+   ```
 
-## What technologies are used for this project?
+3. **Configure environment variables:**
+   - Copy `.env.example` to `.env` in both root and `bidwizer-backend/`.
+   - Set your database URL, OpenAI API key, and SMTP credentials.
 
-This project is built with:
+4. **Run database migrations and seed:**
+   ```bash
+   cd bidwizer-backend
+   npx prisma migrate deploy
+   npm run seed
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+5. **Start the backend:**
+   ```bash
+   npm start
+   ```
 
-## How can I deploy this project?
+6. **Start the frontend:**
+   ```bash
+   cd ../
+   npm run dev
+   ```
 
-Simply open [Lovable](https://lovable.dev/projects/b9777416-fd83-4668-82cc-445a37f339fe) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Folder Structure
