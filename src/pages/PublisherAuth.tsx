@@ -22,6 +22,8 @@ const PublisherAuth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +45,16 @@ const PublisherAuth = () => {
         }
         throw new Error(description);
       }
+      // Only allow publisher role
+      if (!result.user || result.user.role !== "PUBLISHER") {
+        toast({
+          title: "Access Denied",
+          description: "Only publisher accounts can log in here.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       setAuth(result.token, result.user);
       toast({
         title: "Login Successful",
@@ -60,8 +72,10 @@ const PublisherAuth = () => {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError("");
+    setRegisterSuccess(false);
     
     if (registerData.password !== registerData.confirmPassword) {
       toast({
@@ -72,12 +86,18 @@ const PublisherAuth = () => {
       return;
     }
 
-    toast({
-      title: "Registration Successful",
-      description: "Account created! Redirecting to your dashboard.",
-    });
-    console.log("Publisher registration:", registerData);
-    navigate("/publisher-dashboard");
+    try {
+      const response = await fetch("/api/publisher/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registerData),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Registration failed");
+      setRegisterSuccess(true);
+    } catch (err: any) {
+      setRegisterError(err.message);
+    }
   };
 
   return (
@@ -199,78 +219,85 @@ const PublisherAuth = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <form onSubmit={handleRegister} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="org-name">Organization Name</Label>
-                          <Input
-                            id="org-name"
-                            placeholder="Your Organization"
-                            value={registerData.organizationName}
-                            onChange={(e) => setRegisterData({...registerData, organizationName: e.target.value})}
-                            required
-                            className="h-12"
-                          />
+                      {registerSuccess ? (
+                        <div className="text-center text-green-700 font-semibold">
+                          Registration successful! Your account is pending approval. You will receive an email once approved.
                         </div>
+                      ) : (
+                        <form onSubmit={handleRegister} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="org-name">Organization Name</Label>
+                            <Input
+                              id="org-name"
+                              placeholder="Your Organization"
+                              value={registerData.organizationName}
+                              onChange={(e) => setRegisterData({...registerData, organizationName: e.target.value})}
+                              required
+                              className="h-12"
+                            />
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="contact-name">Contact Name</Label>
-                          <Input
-                            id="contact-name"
-                            placeholder="Your Full Name"
-                            value={registerData.contactName}
-                            onChange={(e) => setRegisterData({...registerData, contactName: e.target.value})}
-                            required
-                            className="h-12"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="reg-email">Email</Label>
-                          <Input
-                            id="reg-email"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={registerData.email}
-                            onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                            required
-                            className="h-12"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="reg-password">Password</Label>
-                          <Input
-                            id="reg-password"
-                            type="password"
-                            placeholder="Create a password"
-                            value={registerData.password}
-                            onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                            required
-                            className="h-12"
-                          />
-                        </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contact-name">Contact Name</Label>
+                            <Input
+                              id="contact-name"
+                              placeholder="Your Full Name"
+                              value={registerData.contactName}
+                              onChange={(e) => setRegisterData({...registerData, contactName: e.target.value})}
+                              required
+                              className="h-12"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="reg-email">Email</Label>
+                            <Input
+                              id="reg-email"
+                              type="email"
+                              placeholder="Enter your email"
+                              value={registerData.email}
+                              onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                              required
+                              className="h-12"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="reg-password">Password</Label>
+                            <Input
+                              id="reg-password"
+                              type="password"
+                              placeholder="Create a password"
+                              value={registerData.password}
+                              onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                              required
+                              className="h-12"
+                            />
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="confirm-password">Confirm Password</Label>
-                          <Input
-                            id="confirm-password"
-                            type="password"
-                            placeholder="Confirm your password"
-                            value={registerData.confirmPassword}
-                            onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                            required
-                            className="h-12"
-                          />
-                        </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                            <Input
+                              id="confirm-password"
+                              type="password"
+                              placeholder="Confirm your password"
+                              value={registerData.confirmPassword}
+                              onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                              required
+                              className="h-12"
+                            />
+                          </div>
 
-                        <Button 
-                          type="submit" 
-                          className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl"
-                        >
-                          Create Publisher Account
-                          <ArrowRight className="ml-2 w-5 h-5" />
-                        </Button>
-                      </form>
+                          {registerError && <div className="text-red-600">{registerError}</div>}
+                          <Button 
+                            type="submit" 
+                            className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl"
+                          >
+                            Create Publisher Account
+                            <ArrowRight className="ml-2 w-5 h-5" />
+                          </Button>
+                        </form>
+                      )}
                     </CardContent>
                   </TabsContent>
                 </Tabs>

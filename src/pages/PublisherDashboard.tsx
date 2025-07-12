@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Zap, Upload, Plus, FileText, Calendar, DollarSign, MapPin, Building, Image, Clock, BarChart3, User, Phone, Mail, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getUser } from "@/lib/auth";
 
 const PublisherDashboard = () => {
   const [tenderData, setTenderData] = useState({
@@ -29,6 +30,14 @@ const PublisherDashboard = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = getUser();
+    if (!user || user.role !== "PUBLISHER") {
+      navigate("/publisher-auth");
+    }
+  }, [navigate]);
 
   // Get publisher info from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -103,9 +112,13 @@ const PublisherDashboard = () => {
         formData.append('advertisementImage', tenderData.advertisementImage);
       }
 
+      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:4000/api/tenders', {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) throw new Error('Failed to upload tender');

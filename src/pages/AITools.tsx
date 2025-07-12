@@ -230,7 +230,7 @@ Note: All documents must be current, notarized where required, and submitted in 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tenderTitle,
-          authorizedPerson: publisherData.contact || publisherData.name || "Authorized Officer",
+          authorizedPerson: "Authorized Officer",
           companyProfile: companyData
         })
       });

@@ -16,6 +16,7 @@ datasource db {
 enum UserRole {
   BIDDER
   PUBLISHER
+  ADMIN
 }
 
 enum UserStatus {
@@ -58,6 +59,7 @@ model User {
   company   Company? @relation(fields: [companyId], references: [id])
   uploadedDocuments Document[] @relation("UserUploadedDocuments")
   publishedTenders Tender[] @relation("UserPublishedTenders")
+  auditLogs AuditLog[] @relation("AdminAuditLogs")
   createdAt DateTime @default(now())
 }
 
@@ -108,4 +110,15 @@ model ReferenceEmbedding {
   chunkIndex Int
   chunkText  String
   embedding  Bytes
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  adminId   Int
+  admin     User     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  action    String
+  targetId  Int?
+  targetType String?
+  details   String?
+  createdAt DateTime @default(now())
 }

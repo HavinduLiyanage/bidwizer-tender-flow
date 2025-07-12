@@ -4,9 +4,16 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Clear existing data
-  await prisma.bidderProfile.deleteMany();
-  await prisma.publisherProfile.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.company.deleteMany();
+
+  // Create dummy company for bidder
+  const company = await prisma.company.create({
+    data: {
+      name: 'Bidder Company',
+      plan: 'BASIC',
+    },
+  });
 
   // Create dummy bidder
   const bidderPassword = await bcrypt.hash('bidder123', 10);
@@ -15,15 +22,11 @@ async function main() {
       name: 'Bidder User',
       email: 'bidder@example.com',
       password: bidderPassword,
-      role: 'bidder',
-      status: 'active',
-      bidderProfile: {
-        create: {
-          position: 'Manager',
-        },
-      },
+      role: 'BIDDER',
+      status: 'ACTIVE',
+      companyId: company.id,
+      position: 'Manager',
     },
-    include: { bidderProfile: true },
   });
 
   // Create dummy publisher
@@ -33,18 +36,26 @@ async function main() {
       name: 'Publisher User',
       email: 'publisher@example.com',
       password: publisherPassword,
-      role: 'publisher',
-      status: 'active',
-      publisherProfile: {
-        create: {
-          position: 'CEO',
-        },
-      },
+      role: 'PUBLISHER',
+      status: 'ACTIVE',
+      position: 'CEO',
     },
-    include: { publisherProfile: true },
   });
 
-  console.log('Seeded users:', { bidder, publisher });
+  // Create dummy admin
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.user.create({
+    data: {
+      name: 'Admin User',
+      email: 'admin@bidwizer.com',
+      password: adminPassword,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      position: 'Platform Admin',
+    },
+  });
+
+  console.log('Seeded users:', { bidder, publisher, admin });
 }
 
 main().catch(e => {

@@ -169,6 +169,14 @@ function authenticateJWT(req, res, next) {
   }
 }
 
+// Middleware to check for admin role
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin access required.' });
+  }
+  next();
+}
+
 // Login endpoint (now with JWT)
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
@@ -182,6 +190,28 @@ app.post('/api/login', async (req, res) => {
   }
   if (user.status !== 'ACTIVE') {
     return res.status(403).json({ error: 'Please confirm your email before logging in.' });
+  }
+  // Issue JWT
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  res.json({
+    token,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status }
+  });
+});
+
+// Admin login endpoint (ADMIN role only)
+app.post('/api/admin/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || user.role !== 'ADMIN') {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  if (user.status !== 'ACTIVE') {
+    return res.status(403).json({ error: 'Account not active.' });
   }
   // Issue JWT
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -294,30 +324,35 @@ app.post('/api/tenders', authenticateJWT, upload.fields([
 
   const safe = (v) => (v === undefined || v === '' ? null : v);
 
-  const tender = await prisma.tender.create({
-    data: {
-      publisherId: parseInt(publisherId),
-      title,
-      description: safe(description),
-      deadline: deadline ? new Date(deadline) : null,
-      filePath,
-      advertisementImagePath,
-      tenderText,
-      chunkEmbeddings: req.body.chunkEmbeddings || null,
-      status: 'active',
-      value: safe(value),
-      category: safe(category),
-      preBidMeetingDate: preBidMeetingDate ? new Date(preBidMeetingDate) : null,
-      preBidMeetingTime: safe(preBidMeetingTime),
-      region: safe(region),
-      contactPersonName: safe(contactPersonName),
-      contactNumber: safe(contactNumber),
-      contactEmail: safe(contactEmail),
-      companyWebsite: safe(companyWebsite),
-      requirements: requirementsToSave,
-    }
-  });
-  res.json(tender);
+  try {
+    const tender = await prisma.tender.create({
+      data: {
+        publisherId: parseInt(publisherId),
+        title,
+        description: safe(description),
+        deadline: deadline ? new Date(deadline) : null,
+        filePath,
+        advertisementImagePath,
+        tenderText,
+        chunkEmbeddings: req.body.chunkEmbeddings || null,
+        status: 'active',
+        value: safe(value),
+        category: safe(category),
+        preBidMeetingDate: preBidMeetingDate ? new Date(preBidMeetingDate) : null,
+        preBidMeetingTime: safe(preBidMeetingTime),
+        region: safe(region),
+        contactPersonName: safe(contactPersonName),
+        contactNumber: safe(contactNumber),
+        contactEmail: safe(contactEmail),
+        companyWebsite: safe(companyWebsite),
+        requirements: requirementsToSave,
+      }
+    });
+    res.json(tender);
+  } catch (err) {
+    console.error('Tender upload error:', err);
+    res.status(500).json({ error: err.message || 'Failed to upload tender' });
+  }
 });
 
 // Serve uploaded files
@@ -622,6 +657,47 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Publisher registration endpoint
+app.post('/api/publisher/register', async (req, res) => {
+  const { organizationName, contactName, email, password, organizationType } = req.body;
+  if (!organizationName || !contactName || !email || !password) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+  // Check for duplicate email
+  const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (existing) {
+    return res.status(409).json({ error: 'An account with this email already exists.' });
+  }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: {
+        name: contactName,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: 'PUBLISHER',
+        status: 'INVITED', // Use valid UserStatus value
+        position: organizationType || null,
+      },
+    });
+    // Notify admin
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
+        to: process.env.ADMIN_EMAIL || 'admin@bidwizer.com',
+        subject: 'New Publisher Registration Pending Approval',
+        html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><h2 style="color: #2d3a4a; font-size: 1.3rem; margin: 0 0 16px 0;">New Publisher Registration</h2><p><b>Organization:</b> ${organizationName}</p><p><b>Contact:</b> ${contactName}</p><p><b>Email:</b> ${email}</p><p><b>Type:</b> ${organizationType || 'N/A'}</p><p style="margin-top: 24px;">Please review and approve this publisher in the admin dashboard.</p></div></div>`
+      });
+    } catch (err) {
+      console.error('Failed to send admin notification:', err);
+    }
+    res.json({ message: 'Registration successful. Your account is pending approval.' });
+  } catch (err) {
+    console.error('Publisher registration error:', err);
+    res.status(500).json({ error: 'Registration failed. Please try again later.' });
+  }
+});
+
 // Team member registration endpoint
 app.post('/api/team-member-register', async (req, res) => {
   const { firstName, lastName, email, password, confirmPassword, position, token, inviteEmail } = req.body;
@@ -856,6 +932,123 @@ app.delete('/api/documents/:id', authenticateJWT, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Delete failed.' });
   }
+});
+
+// Admin: List all users
+app.get('/api/admin/users', authenticateJWT, requireAdmin, async (req, res) => {
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true, role: true, status: true, position: true, createdAt: true }
+  });
+  res.json(users);
+});
+
+// Admin: Update user (status, role, position)
+app.patch('/api/admin/users/:id', authenticateJWT, requireAdmin, async (req, res) => {
+  const { status, role, position } = req.body;
+  const user = await prisma.user.update({
+    where: { id: parseInt(req.params.id) },
+    data: { status, role, position },
+  });
+  await prisma.auditLog.create({
+    data: {
+      adminId: req.user.id,
+      action: 'UPDATE_USER',
+      targetId: user.id,
+      targetType: 'User',
+      details: JSON.stringify({ status, role, position }),
+    },
+  });
+  res.json(user);
+});
+
+// Admin: Delete user
+app.delete('/api/admin/users/:id', authenticateJWT, requireAdmin, async (req, res) => {
+  await prisma.user.delete({ where: { id: parseInt(req.params.id) } });
+  await prisma.auditLog.create({
+    data: {
+      adminId: req.user.id,
+      action: 'DELETE_USER',
+      targetId: parseInt(req.params.id),
+      targetType: 'User',
+    },
+  });
+  res.json({ success: true });
+});
+
+// Admin: Approve publisher (set status to ACTIVE)
+app.post('/api/admin/publishers/:id/approve', authenticateJWT, requireAdmin, async (req, res) => {
+  const user = await prisma.user.update({
+    where: { id: parseInt(req.params.id) },
+    data: { status: 'ACTIVE' },
+  });
+  await prisma.auditLog.create({
+    data: {
+      adminId: req.user.id,
+      action: 'APPROVE_PUBLISHER',
+      targetId: user.id,
+      targetType: 'User',
+    },
+  });
+  // Send email to publisher notifying approval
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
+      to: user.email,
+      subject: 'Your BidWizer Publisher Account is Approved',
+      html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style=\"color: #2d3a4a; font-size: 1.5rem; margin: 0;\">Publisher Account Approved</h2></div><p style=\"color: #3b4252; font-size: 1.1rem;\">Hello <b>${user.name}</b>,</p><p style=\"color: #3b4252;\">Your publisher account has been approved by the BidWizer team. You can now log in and start publishing tenders.</p><div style=\"text-align: center; margin: 32px 0;\"><a href=\"${process.env.FRONTEND_URL || 'http://localhost:8080'}/publisher-dashboard\" style=\"display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;\">Go to Publisher Dashboard</a></div><div style=\"margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;\">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
+    });
+  } catch (err) {
+    console.error('Failed to send approval email:', err);
+  }
+  res.json(user);
+});
+
+// Admin: Reject publisher (set status to SUSPENDED)
+app.post('/api/admin/publishers/:id/reject', authenticateJWT, requireAdmin, async (req, res) => {
+  const user = await prisma.user.update({
+    where: { id: parseInt(req.params.id) },
+    data: { status: 'SUSPENDED' },
+  });
+  await prisma.auditLog.create({
+    data: {
+      adminId: req.user.id,
+      action: 'REJECT_PUBLISHER',
+      targetId: user.id,
+      targetType: 'User',
+    },
+  });
+  // Send email to publisher notifying rejection
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
+      to: user.email,
+      subject: 'Your BidWizer Publisher Account is Rejected',
+      html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">Publisher Account Rejected</h2></div><p style="color: #3b4252; font-size: 1.1rem;">Hello <b>${user.name}</b>,</p><p style="color: #3b4252;">Your publisher account has been reviewed and was not approved at this time. If you believe this is a mistake, please contact support at support@bidwizer.com.</p><div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
+    });
+  } catch (err) {
+    console.error('Failed to send rejection email:', err);
+  }
+  res.json(user);
+});
+
+// Admin: Platform stats
+app.get('/api/admin/stats', authenticateJWT, requireAdmin, async (req, res) => {
+  const userCount = await prisma.user.count();
+  const bidderCount = await prisma.user.count({ where: { role: 'BIDDER' } });
+  const publisherCount = await prisma.user.count({ where: { role: 'PUBLISHER' } });
+  const tenderCount = await prisma.tender.count();
+  const documentCount = await prisma.document.count();
+  res.json({ userCount, bidderCount, publisherCount, tenderCount, documentCount });
+});
+
+// Admin: List audit logs
+app.get('/api/admin/audit-logs', authenticateJWT, requireAdmin, async (req, res) => {
+  const logs = await prisma.auditLog.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { admin: { select: { id: true, name: true, email: true } } },
+    take: 100,
+  });
+  res.json(logs);
 });
 
 const PORT = process.env.PORT || 4000;
