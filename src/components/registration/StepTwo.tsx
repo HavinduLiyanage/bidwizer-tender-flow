@@ -23,7 +23,6 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
     companyName: "",
   });
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string) => {
@@ -56,13 +55,13 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
       });
       const result = await res.json();
       if (res.ok) {
-        setEmailSent(true);
-        onUpdate({ adminData: formData, emailVerificationSent: true });
+        onUpdate({ adminData: formData });
         localStorage.setItem("adminEmail", formData.email); // Persist admin email
         toast({
-          title: "Verification Email Sent!",
-          description: "Please check your email to verify your account.",
+          title: "Registration Successful!",
+          description: "Your account has been created successfully.",
         });
+        onNext(); // Proceed to next step immediately
       } else {
         toast({
           title: "Registration Failed",
@@ -80,18 +79,7 @@ const StepTwo = ({ data, onUpdate, onNext }: StepTwoProps) => {
     setLoading(false);
   };
 
-  if (emailSent) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-4 text-blue-700">Check Your Email</h2>
-        <p className="text-gray-700 mb-6">We've sent a confirmation link to <b>{formData.email}</b>.<br />Please confirm your email to continue registration.</p>
-        <div className="flex justify-center">
-          <Mail className="w-12 h-12 text-blue-500" />
-        </div>
-        <p className="mt-8 text-gray-500">Didn't receive the email? Check your spam folder or <a href="mailto:support@bidwizer.com" className="text-blue-600 underline">contact support</a>.</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-8">

@@ -4,12 +4,12 @@ import { User, Building, Clock } from "lucide-react";
 interface WelcomeHeaderProps {
   user: {
     name?: string;
-    companyName?: string;
     email?: string;
   };
+  companyName?: string;
 }
 
-const WelcomeHeader = ({ user }: WelcomeHeaderProps) => {
+const WelcomeHeader = ({ user, companyName }: WelcomeHeaderProps) => {
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -24,10 +24,10 @@ const WelcomeHeader = ({ user }: WelcomeHeaderProps) => {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
             {getGreeting()}, {user.name || "Publisher"}!
           </h1>
-          {user.companyName && (
+          {companyName && (
             <div className="flex items-center text-gray-600 mt-1">
               <Building className="w-4 h-4 mr-1" />
-              <span className="text-sm">{user.companyName.toUpperCase()}</span>
+              <span className="text-sm">{companyName.toUpperCase()}</span>
             </div>
           )}
         </div>

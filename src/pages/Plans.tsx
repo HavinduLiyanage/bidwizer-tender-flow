@@ -11,9 +11,9 @@ const planData = [
   {
     name: "Basic",
     price: 99,
-    seats: 5,
+    seats: 3,
     features: [
-      "Up to 5 team members",
+      "Up to 3 users (including admin)",
       "20 tenders per month",
       "Basic AI document analysis",
       "Standard templates",
@@ -23,16 +23,16 @@ const planData = [
     link: "/multi-step-register?plan=basic",
     highlight: false,
     badge: null,
-    description: "Perfect for small teams getting started",
+    description: "Perfect for very small teams getting started",
     annual: "$1,188/year",
     color: "border-2 hover:border-blue-300",
   },
   {
     name: "Pro",
     price: 299,
-    seats: 10,
+    seats: 5,
     features: [
-      "Up to 10 team members",
+      "Up to 5 users (including admin)",
       "Unlimited tenders",
       "Advanced AI tools & automation",
       "Custom templates & branding",
@@ -52,7 +52,7 @@ const planData = [
     price: 599,
     seats: "Unlimited",
     features: [
-      "Unlimited team members",
+      "Unlimited users",
       "Unlimited everything",
       "White-label options",
       "Custom integrations",

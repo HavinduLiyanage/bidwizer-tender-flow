@@ -212,7 +212,7 @@ const PublisherDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Personalized Welcome Header */}
         {company && company.name ? (
-          <WelcomeHeader user={{ ...user, companyName: company.name }} />
+          <WelcomeHeader user={user} companyName={company.name} />
         ) : (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
             <p className="text-yellow-800 font-semibold">Company information not found for your account. Please contact support.</p>

@@ -233,8 +233,13 @@ const PublisherAuth = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       {registerSuccess ? (
-                        <div className="text-center text-green-700 font-semibold">
-                          Registration successful! Your account is pending approval. You will receive an email once approved.
+                        <div className="text-center space-y-4">
+                          <div className="text-green-700 font-semibold">
+                            Registration successful! Please check your email to confirm your account.
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            After confirming your email, your account will be reviewed by our team for approval.
+                          </div>
                         </div>
                       ) : (
                         <form onSubmit={handleRegister} className="space-y-4">

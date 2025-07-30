@@ -5,10 +5,20 @@ import { useEffect, useState } from "react";
 
 const Navigation = () => {
   const [user, setUser] = useState(null);
+  const [company, setCompany] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setUser(getUser());
+    const userData = getUser();
+    setUser(userData);
+    
+    // Fetch company info if user has companyId
+    if (userData?.companyId) {
+      fetch(`http://localhost:4000/api/company/${userData.companyId}`)
+        .then(res => res.json())
+        .then(data => setCompany(data))
+        .catch(() => setCompany(null));
+    }
   }, []);
 
   const handleLogout = () => {
@@ -30,8 +40,8 @@ const Navigation = () => {
             {user && (
               <span className="text-gray-700">
                 Welcome, {user.name || user.email}
-                {user.companyName && (
-                  <span className="ml-3 font-semibold text-green-700">{user.companyName.toUpperCase()}</span>
+                {company?.name && (
+                  <span className="ml-3 font-semibold text-green-700">{company.name.toUpperCase()}</span>
                 )}
               </span>
             )}

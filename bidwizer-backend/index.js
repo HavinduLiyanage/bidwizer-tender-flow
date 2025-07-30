@@ -621,8 +621,6 @@ app.post('/api/register', async (req, res) => {
     return res.status(409).json({ error: 'Email already registered' });
   }
   const hashedPassword = await bcrypt.hash(password, 12);
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
   try {
     let companyId = null;
     if (role === 'BIDDER') {
@@ -635,22 +633,12 @@ app.post('/api/register', async (req, res) => {
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         role,
-        status: 'INVITED',
+        status: 'ACTIVE', // Bidders are activated immediately
         position: safePosition,
-        confirmToken: token,
-        confirmTokenExpiry: expiry,
         companyId: companyId,
       }
     });
-    // Send confirmation email
-    const confirmUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/confirm-email?token=${token}&email=${encodeURIComponent(email)}`;
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
-      to: email,
-      subject: 'Confirm your BidWizer account',
-      html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">Welcome to BidWizer!</h2></div><p style="color: #3b4252; font-size: 1.1rem;">Hello <b>${name}</b>,</p><p style="color: #3b4252;">Thank you for registering your organization with BidWizer. To continue setting up your account, please confirm your email address by clicking the button below. This link will expire in 24 hours.</p><div style="text-align: center; margin: 32px 0;"><a href="${confirmUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Confirm Email</a></div><p style="color: #64748b; font-size: 0.97rem;">If you did not request this, you can safely ignore this email.</p><div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
-    });
-    res.json({ message: 'Registration successful. Please check your email to confirm your account.' });
+    res.json({ message: 'Registration successful. You can now log in.' });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed. Please try again later.' });
@@ -670,6 +658,9 @@ app.post('/api/publisher/register', async (req, res) => {
   }
   try {
     const hashedPassword = await bcrypt.hash(password, 12);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
     // Create company for publisher
     const company = await prisma.company.create({
       data: {
@@ -686,20 +677,21 @@ app.post('/api/publisher/register', async (req, res) => {
         status: 'INVITED',
         position: organizationType || null,
         companyId: company.id,
+        confirmToken: token,
+        confirmTokenExpiry: expiry,
       },
     });
-    // Notify admin
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
-        to: process.env.ADMIN_EMAIL || 'admin@bidwizer.com',
-        subject: 'New Publisher Registration Pending Approval',
-        html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><h2 style="color: #2d3a4a; font-size: 1.3rem; margin: 0 0 16px 0;">New Publisher Registration</h2><p><b>Organization:</b> ${organizationName}</p><p><b>Contact:</b> ${contactName}</p><p><b>Email:</b> ${email}</p><p><b>Type:</b> ${organizationType || 'N/A'}</p><p style="margin-top: 24px;">Please review and approve this publisher in the admin dashboard.</p></div></div>`
-      });
-    } catch (err) {
-      console.error('Failed to send admin notification:', err);
-    }
-    res.json({ message: 'Registration successful. Your account is pending approval.' });
+    
+    // Send confirmation email
+    const confirmUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/confirm-email?token=${token}&email=${encodeURIComponent(email)}&type=publisher`;
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
+      to: email,
+      subject: 'Confirm your BidWizer Publisher Account',
+      html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><div style="text-align: center; margin-bottom: 24px;"><img src='https://bidwizer.com/logo.png' alt='BidWizer Logo' style='height: 48px; margin-bottom: 8px;' /><h2 style="color: #2d3a4a; font-size: 1.5rem; margin: 0;">Welcome to BidWizer Publisher Portal!</h2></div><p style="color: #3b4252; font-size: 1.1rem;">Hello <b>${contactName}</b>,</p><p style="color: #3b4252;">Thank you for registering your organization (${organizationName}) as a publisher on BidWizer. To continue setting up your account, please confirm your email address by clicking the button below. This link will expire in 24 hours.</p><div style="text-align: center; margin: 32px 0;"><a href="${confirmUrl}" style="display: inline-block; background: linear-gradient(90deg, #2563eb, #6366f1); color: #fff; font-weight: 600; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.5px;">Confirm Email</a></div><p style="color: #64748b; font-size: 0.97rem;">If you did not request this, you can safely ignore this email.</p><div style="margin-top: 32px; text-align: center; color: #94a3b8; font-size: 0.9rem;">&copy; ${new Date().getFullYear()} BidWizer. All rights reserved.</div></div></div>`
+    });
+    
+    res.json({ message: 'Registration successful. Please check your email to confirm your account.' });
   } catch (err) {
     console.error('Publisher registration error:', err);
     res.status(500).json({ error: 'Registration failed. Please try again later.' });
@@ -740,9 +732,27 @@ app.post('/api/team-member-register', async (req, res) => {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
-    // TODO: In a real implementation, you would validate the token against a stored invitation
-    // For now, we'll create the user directly
-    
+    // Find the inviter/admin user by inviteEmail to get company
+    const adminUser = await prisma.user.findUnique({ where: { email: inviteEmail.toLowerCase() }, include: { company: true } });
+    if (!adminUser || !adminUser.companyId || !adminUser.company) {
+      return res.status(400).json({ error: 'Inviting admin or company not found.' });
+    }
+    const company = adminUser.company;
+    // Count current users in the company
+    const currentCount = await prisma.user.count({ where: { companyId: company.id } });
+    // Determine max allowed based on plan
+    let maxAccounts;
+    if (company.plan === 'PRO') {
+      maxAccounts = 5;
+    } else if (company.plan === 'BASIC') {
+      maxAccounts = 3;
+    } else {
+      maxAccounts = Infinity;
+    }
+    if (currentCount >= maxAccounts) {
+      return res.status(400).json({ error: `Your plan allows up to ${maxAccounts === Infinity ? 'unlimited' : maxAccounts} accounts (including admin). You already have ${currentCount}.` });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     const safePosition = position && typeof position === 'string' ? position.replace(/[^a-zA-Z0-9 .,-]/g, '') : '';
@@ -756,8 +766,7 @@ app.post('/api/team-member-register', async (req, res) => {
         role: 'BIDDER',
         status: 'ACTIVE', // Team members are immediately active
         position: safePosition,
-        // Note: companyId should be set based on the invitation token in a real implementation
-        // For now, we'll leave it null and handle it in the business logic
+        companyId: company.id,
       }
     });
 
@@ -777,7 +786,7 @@ app.post('/api/team-member-register', async (req, res) => {
   }
 });
 
-// Email confirmation endpoint
+// Email confirmation endpoint (Publishers only)
 app.get('/api/confirm-email', async (req, res) => {
   try {
     const { token, email } = req.query;
@@ -792,11 +801,31 @@ app.get('/api/confirm-email', async (req, res) => {
     if (!user.confirmTokenExpiry || new Date() > new Date(user.confirmTokenExpiry)) {
       return res.status(400).json({ error: 'Confirmation link has expired. Please register again.' });
     }
+    
+    // Only handle publishers
+    if (user.role !== 'PUBLISHER') {
+      return res.status(400).json({ error: 'Invalid user type for email confirmation.' });
+    }
+    
+    // For publishers, keep status as INVITED (pending admin approval)
     await prisma.user.update({
       where: { email: String(email).toLowerCase() },
-      data: { status: 'ACTIVE', confirmToken: null, confirmTokenExpiry: null },
+      data: { confirmToken: null, confirmTokenExpiry: null },
     });
-    res.json({ message: 'Email confirmed! You can now log in.' });
+    
+    // Send admin notification
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || 'noreply@bidwizer.com',
+        to: process.env.ADMIN_EMAIL || 'admin@bidwizer.com',
+        subject: 'New Publisher Email Confirmed - Pending Approval',
+        html: `<div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fb; padding: 40px 0;"><div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 32px 32px 24px 32px;"><h2 style="color: #2d3a4a; font-size: 1.3rem; margin: 0 0 16px 0;">New Publisher Email Confirmed</h2><p><b>Organization:</b> ${user.company?.name || 'N/A'}</p><p><b>Contact:</b> ${user.name}</p><p><b>Email:</b> ${user.email}</p><p><b>Position:</b> ${user.position || 'N/A'}</p><p style="margin-top: 24px; color: #059669; font-weight: 600;">✅ Email has been confirmed. Publisher is now waiting for admin approval.</p><p style="margin-top: 24px;">Please review and approve this publisher in the admin dashboard.</p></div></div>`
+      });
+    } catch (err) {
+      console.error('Failed to send admin notification:', err);
+    }
+    
+    res.json({ message: 'Email confirmed! Your account is pending admin approval.' });
   } catch (err) {
     console.error('Email confirmation error:', err);
     res.status(500).json({ error: 'Email confirmation failed. Please try again later.' });
@@ -824,9 +853,17 @@ app.post('/api/invite-team', async (req, res) => {
   // Count current users in the company
   const currentCount = await prisma.user.count({ where: { companyId: company.id } });
   // Determine max allowed based on plan
-  const maxAccounts = company.plan === 'PRO' ? 5 : 4;
+  let maxAccounts;
+  if (company.plan === 'PRO') {
+    maxAccounts = 5;
+  } else if (company.plan === 'BASIC') {
+    maxAccounts = 3;
+  } else {
+    // Unlimited plan (future-proof, or if plan is not recognized)
+    maxAccounts = Infinity;
+  }
   if (currentCount + teamMembers.length > maxAccounts) {
-    return res.status(400).json({ error: `Your plan allows up to ${maxAccounts} accounts (including admin). You already have ${currentCount}.` });
+    return res.status(400).json({ error: `Your plan allows up to ${maxAccounts === Infinity ? 'unlimited' : maxAccounts} accounts (including admin). You already have ${currentCount}.` });
   }
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
   let sent = 0;
@@ -1049,15 +1086,7 @@ app.get('/api/admin/stats', authenticateJWT, requireAdmin, async (req, res) => {
   res.json({ userCount, bidderCount, publisherCount, tenderCount, documentCount });
 });
 
-// Admin: List audit logs
-app.get('/api/admin/audit-logs', authenticateJWT, requireAdmin, async (req, res) => {
-  const logs = await prisma.auditLog.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { admin: { select: { id: true, name: true, email: true } } },
-    take: 100,
-  });
-  res.json(logs);
-});
+
 
 // Get company by ID
 app.get('/api/company/:id', async (req, res) => {

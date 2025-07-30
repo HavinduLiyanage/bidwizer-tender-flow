@@ -15,7 +15,6 @@ const MultiStepRegister = () => {
   const initialPlan = searchParams.get("plan") || "pro";
   // Read step and emailConfirmed from location.state if present
   const initialStep = location.state?.step || 1;
-  const initialEmailConfirmed = location.state?.emailConfirmed || false;
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [registrationData, setRegistrationData] = useState({
     plan: initialPlan,
@@ -24,7 +23,6 @@ const MultiStepRegister = () => {
     adminData: {},
     teamMembers: [],
     companyProfile: {},
-    emailConfirmed: initialEmailConfirmed,
   });
 
   // Update seats if plan changes
@@ -35,36 +33,13 @@ const MultiStepRegister = () => {
     }));
   }, [registrationData.plan]);
 
-  // Check for /confirm route
-  useEffect(() => {
-    if (location.pathname === "/multi-step-register/confirm") {
-      // Parse token/email from query
-      const token = searchParams.get("token");
-      const email = searchParams.get("email");
-      if (token && email) {
-        fetch(`/api/confirm-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`)
-          .then(res => res.json())
-          .then(result => {
-            if (result.message) {
-              setRegistrationData(prev => ({ ...prev, emailConfirmed: true }));
-              // Optionally, auto-advance to next step
-              setCurrentStep(3);
-            }
-          });
-      }
-    }
-  }, [location, searchParams]);
+
 
   const updateRegistrationData = (data: any) => {
     setRegistrationData(prev => ({ ...prev, ...data }));
   };
 
   const nextStep = () => {
-    // Block Step 3/4 if not confirmed
-    if ((currentStep === 2 || currentStep === 3) && !registrationData.emailConfirmed) {
-      alert("Please confirm your email before continuing registration.");
-      return;
-    }
     setCurrentStep(prev => prev + 1);
   };
 
@@ -122,31 +97,19 @@ const MultiStepRegister = () => {
                 onNext={nextStep}
               />
             )}
-            {currentStep === 3 && registrationData.emailConfirmed && (
+            {currentStep === 3 && (
               <StepThree
                 data={registrationData}
                 onUpdate={updateRegistrationData}
                 onNext={nextStep}
               />
             )}
-            {currentStep === 3 && !registrationData.emailConfirmed && (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold mb-4 text-blue-700">Email Not Confirmed</h2>
-                <p className="text-gray-700 mb-6">Please confirm your email to continue registration.</p>
-              </div>
-            )}
-            {currentStep === 4 && registrationData.emailConfirmed && (
+            {currentStep === 4 && (
               <StepFour
                 data={registrationData}
                 onUpdate={updateRegistrationData}
                 onNext={nextStep}
               />
-            )}
-            {currentStep === 4 && !registrationData.emailConfirmed && (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold mb-4 text-blue-700">Email Not Confirmed</h2>
-                <p className="text-gray-700 mb-6">Please confirm your email to continue registration.</p>
-              </div>
             )}
           </CardContent>
         </Card>
